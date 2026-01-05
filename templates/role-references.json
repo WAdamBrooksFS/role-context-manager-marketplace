@@ -1,0 +1,13 @@
+{
+  "_comment": "This template provides an example structure for role-references.json",
+  "_usage": "The plugin will automatically populate this with role-specific document references from role guides",
+
+  "example-role-name": {
+    "default_documents": [
+      "/path/to/company-level-doc.md",
+      "/path/to/another-doc.md",
+      "relative/path/to/local-doc.md"
+    ],
+    "user_customizations": []
+  }
+}

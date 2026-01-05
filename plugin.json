@@ -1,0 +1,71 @@
+{
+  "name": "role-context-manager",
+  "version": "1.0.0",
+  "description": "Manage role-based document context for Claude Code sessions. Set your role, customize document references, and automatically load relevant context based on your organizational level.",
+  "author": "Software Organization Template",
+  "repository": "https://github.com/your-org/role-context-manager",
+  "license": "MIT",
+  "keywords": [
+    "role-management",
+    "context-loading",
+    "documentation",
+    "organizational-hierarchy",
+    "developer-workflow"
+  ],
+  "commands": [
+    {
+      "name": "set-role",
+      "description": "Set your current role (software-engineer, product-manager, etc.)",
+      "file": "commands/set-role.md"
+    },
+    {
+      "name": "show-role-context",
+      "description": "Display current role and documents that will load",
+      "file": "commands/show-role-context.md"
+    },
+    {
+      "name": "update-role-docs",
+      "description": "Add (+) or remove (-) documents from your role's reference list",
+      "file": "commands/update-role-docs.md"
+    },
+    {
+      "name": "init-role-docs",
+      "description": "Initialize or reset role document references to defaults",
+      "file": "commands/init-role-docs.md"
+    },
+    {
+      "name": "set-org-level",
+      "description": "Set organizational level (company/system/product/project)",
+      "file": "commands/set-org-level.md"
+    }
+  ],
+  "scripts": [
+    "scripts/role-manager.sh",
+    "scripts/doc-validator.sh",
+    "scripts/level-detector.sh"
+  ],
+  "requires": {
+    "jq": ">=1.6",
+    "bash": ">=4.0"
+  },
+  "configuration": {
+    "preferences": {
+      "user_role": {
+        "type": "string",
+        "description": "Current user role",
+        "default": null
+      }
+    },
+    "role_references": {
+      "type": "object",
+      "description": "Role-specific document references",
+      "default": {}
+    },
+    "organizational_level": {
+      "type": "string",
+      "enum": ["company", "system", "product", "project"],
+      "description": "Organizational level of current directory",
+      "default": null
+    }
+  }
+}

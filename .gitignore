@@ -1,0 +1,23 @@
+# User-specific role document preferences
+# These files contain personal customizations and should not be committed
+*.local.json
+role-references.local.json
+
+# Testing artifacts
+test/
+*.test.json
+*.bak
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
