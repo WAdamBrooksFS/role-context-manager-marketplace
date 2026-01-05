@@ -449,9 +449,9 @@ MIT License - See LICENSE file for details
 
 ## Support
 
-- **Issues**: https://github.com/practice-adam-brooks/role-context-manager/issues
-- **Discussions**: https://github.com/practice-adam-brooks/role-context-manager/discussions
-- **Documentation**: https://github.com/practice-adam-brooks/role-context-manager/wiki
+- **Issues**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/issues
+- **Discussions**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/discussions
+- **Documentation**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/wiki
 
 ## Changelog
 
