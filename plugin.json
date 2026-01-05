@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Manage role-based document context for Claude Code sessions. Set your role, customize document references, and automatically load relevant context based on your organizational level.",
   "author": "Software Organization Template",
-  "repository": "https://github.com/your-org/role-context-manager",
+  "repository": "https://github.com/practice-adam-brooks/role-context-manager",
   "license": "MIT",
   "keywords": [
     "role-management",
