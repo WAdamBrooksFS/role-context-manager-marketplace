@@ -42,6 +42,103 @@ claude-code plugin install role-context-manager
 2. Copy the plugin directory to your Claude Code plugins folder
 3. Reload Claude Code
 
+## SessionStart Hook
+
+The plugin automatically validates your setup and checks for template updates when you start a new Claude Code session.
+
+### What Happens on Session Start
+
+**Automatic checks** (configured by default):
+1. **Setup validation** (`/validate-setup --quiet`): Checks if .claude directory is properly configured
+2. **Template sync check** (`/sync-template --check-only`): Checks for template updates (if `auto_update_templates` is enabled)
+
+### Output Examples
+
+**When everything is healthy:**
+```
+✓ Setup valid
+✓ Template up-to-date (software-org v1.0.0)
+```
+
+**When setup is incomplete:**
+```
+⚠ Setup incomplete - run /init-org-template to initialize
+```
+
+**When template update is available:**
+```
+ℹ Template update available (v1.0.0 → v1.1.0) - run /sync-template to update
+```
+
+**First-time use:**
+```
+👋 Welcome to role-context-manager!
+
+This plugin helps you organize documentation and maintain
+role-based context for Claude Code sessions.
+
+To get started, you need to initialize your organizational framework.
+
+Would you like to initialize your organizational framework now?
+```
+
+### Customizing Hook Behavior
+
+The SessionStart hook is automatically configured when you first use any plugin command. You can customize what runs on session start by editing `.claude/settings.json`:
+
+**Minimal** (validation only):
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      "/validate-setup --silent"
+    ]
+  }
+}
+```
+
+**Standard** (validation + update check) - default:
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      "/validate-setup --quiet",
+      "/sync-template --check-only"
+    ]
+  }
+}
+```
+
+**Verbose** (validation + updates + role context):
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      "/validate-setup",
+      "/sync-template --check-only",
+      "/show-role-context --summary"
+    ]
+  }
+}
+```
+
+**Disabled** (no automatic hooks):
+```json
+{
+  "hooks": {
+    "SessionStart": []
+  }
+}
+```
+
+### Troubleshooting Hook Setup
+
+If hooks aren't running automatically:
+1. Verify `.claude/settings.json` exists with SessionStart configuration
+2. Check that `.claude/.role-context-manager-setup-complete` marker file exists
+3. Run `/setup-plugin-hooks` to reconfigure if needed
+4. Restart Claude Code completely (not just new session)
+
 ## Quick Start
 
 ### For New Users (v1.1.0+): Initialize from Template
@@ -485,6 +582,48 @@ MIT License - See LICENSE file for details
 - **Documentation**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/wiki
 
 ## Changelog
+
+### v1.2.0 (2026-01-05) - SessionStart Hook & Auto-Validation
+**New Features**:
+- **SessionStart Hook**: Automatic validation and update checks on session start
+- **First-Run Initialization**: Guided setup on first use with welcome flow
+- **Auto-Configuration**: Hook setup automatic on first command use
+
+**New Command**:
+- `/setup-plugin-hooks` - Configure SessionStart hook (manual fallback)
+
+**Enhanced Commands with New Flags**:
+- `/validate-setup --silent` - No output unless issues found
+- `/validate-setup --quiet` - One-line summary only
+- `/validate-setup --summary` - Brief checklist of results
+- `/sync-template --check-only` - Check for updates without applying
+- `/sync-template --quiet` - Minimal output with check-only
+- `/show-role-context --summary` - One-line role context summary
+
+**Agent Enhancements**:
+- **framework-validator**: Added hook modes (silent, quiet, summary) and first-run detection
+- **template-sync**: Added check-only mode for non-intrusive update checks
+
+**Hook Integration**:
+- Pre-flight checks in all major commands to configure hook on first use
+- Non-intrusive session start validation
+- Automatic template update detection (respects auto_update_templates preference)
+- First-run welcome and initialization offer
+
+**Scripts**:
+- New `post-install.sh` for automatic hook configuration
+
+**Documentation**:
+- New SessionStart Hook section in README
+- SessionStart Hook Integration section in TEMPLATES.md
+- Updated command documentation with flag usage
+- Hook customization examples and troubleshooting
+
+**User Experience**:
+- Zero manual configuration required
+- Seamless onboarding for new users
+- Quiet operation for established users
+- Setup always validated on session start
 
 ### v1.1.0 (2026-01-05) - Templates & Intelligent Agents
 **New Commands**:

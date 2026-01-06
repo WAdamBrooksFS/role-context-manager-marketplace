@@ -138,12 +138,43 @@ test_section "Plugin Configuration"
 AGENT_COUNT=$(jq '.agents | length' "$PROJECT_ROOT/plugin.json" 2>/dev/null || echo "0")
 [[ $AGENT_COUNT -eq 5 ]] && test_pass "plugin.json has 5 agents" || test_fail "plugin.json has $AGENT_COUNT agents (expected 5)"
 COMMAND_COUNT_V11=$(jq '.commands | length' "$PROJECT_ROOT/plugin.json" 2>/dev/null || echo "0")
-[[ $COMMAND_COUNT_V11 -eq 10 ]] && test_pass "plugin.json has 10 commands" || test_fail "plugin.json has $COMMAND_COUNT_V11 commands (expected 10)"
+[[ $COMMAND_COUNT_V11 -eq 11 ]] && test_pass "plugin.json has 11 commands" || test_fail "plugin.json has $COMMAND_COUNT_V11 commands (expected 11)"
 
 # Test 15: Documentation (v1.1.0)
 test_section "Documentation v1.1.0"
 [[ -f "$PROJECT_ROOT/TEMPLATES.md" ]] && test_pass "TEMPLATES.md exists" || test_fail "TEMPLATES.md missing"
 grep -q "v1.1.0" "$PROJECT_ROOT/README.md" 2>/dev/null && test_pass "README mentions v1.1.0" || test_fail "README doesn't mention v1.1.0"
+
+# Test 16: SessionStart Hook Configuration (v1.2.0)
+test_section "SessionStart Hook"
+jq -e '.hooks."session-start"' "$PROJECT_ROOT/plugin.json" &>/dev/null && test_pass "SessionStart hook defined in plugin.json" || test_fail "SessionStart hook missing in plugin.json"
+jq -e '.hooks."session-start".commands' "$PROJECT_ROOT/plugin.json" &>/dev/null && test_pass "Hook commands array exists" || test_fail "Hook commands array missing"
+HOOK_CMD_COUNT=$(jq '.hooks."session-start".commands | length' "$PROJECT_ROOT/plugin.json" 2>/dev/null || echo "0")
+[[ $HOOK_CMD_COUNT -eq 2 ]] && test_pass "Hook has 2 commands (validate + sync)" || test_fail "Hook has $HOOK_CMD_COUNT commands (expected 2)"
+[[ -f "$PROJECT_ROOT/scripts/post-install.sh" ]] && test_pass "post-install.sh exists" || test_fail "post-install.sh missing"
+[[ -x "$PROJECT_ROOT/scripts/post-install.sh" ]] && test_pass "post-install.sh is executable" || test_fail "post-install.sh not executable"
+bash -n "$PROJECT_ROOT/scripts/post-install.sh" 2>/dev/null && test_pass "post-install.sh syntax valid" || test_fail "post-install.sh syntax error"
+[[ -f "$PROJECT_ROOT/commands/setup-plugin-hooks.md" ]] && test_pass "setup-plugin-hooks.md exists" || test_fail "setup-plugin-hooks.md missing"
+
+# Test 17: Command Flags (v1.2.0)
+test_section "Command Flags"
+grep -q "\-\-silent" "$PROJECT_ROOT/commands/validate-setup.md" 2>/dev/null && test_pass "validate-setup has --silent flag" || test_fail "validate-setup missing --silent flag"
+grep -q "\-\-quiet" "$PROJECT_ROOT/commands/validate-setup.md" 2>/dev/null && test_pass "validate-setup has --quiet flag" || test_fail "validate-setup missing --quiet flag"
+grep -q "\-\-summary" "$PROJECT_ROOT/commands/validate-setup.md" 2>/dev/null && test_pass "validate-setup has --summary flag" || test_fail "validate-setup missing --summary flag"
+grep -q "\-\-check-only" "$PROJECT_ROOT/commands/sync-template.md" 2>/dev/null && test_pass "sync-template has --check-only flag" || test_fail "sync-template missing --check-only flag"
+grep -q "\-\-summary" "$PROJECT_ROOT/commands/show-role-context.md" 2>/dev/null && test_pass "show-role-context has --summary flag" || test_fail "show-role-context missing --summary flag"
+
+# Test 18: Agent Hook Modes (v1.2.0)
+test_section "Agent Hook Modes"
+grep -q "Hook Mode Behaviors" "$PROJECT_ROOT/agents/framework-validator/agent.md" 2>/dev/null && test_pass "framework-validator has hook modes section" || test_fail "framework-validator missing hook modes"
+grep -q "First-Run Detection" "$PROJECT_ROOT/agents/framework-validator/agent.md" 2>/dev/null && test_pass "framework-validator has first-run detection" || test_fail "framework-validator missing first-run detection"
+grep -q "Check-Only Mode" "$PROJECT_ROOT/agents/template-sync/agent.md" 2>/dev/null && test_pass "template-sync has check-only mode" || test_fail "template-sync missing check-only mode"
+
+# Test 19: Documentation (v1.2.0)
+test_section "Documentation v1.2.0"
+grep -q "SessionStart Hook" "$PROJECT_ROOT/README.md" 2>/dev/null && test_pass "README has SessionStart Hook section" || test_fail "README missing SessionStart Hook section"
+grep -q "SessionStart Hook Integration" "$PROJECT_ROOT/TEMPLATES.md" 2>/dev/null && test_pass "TEMPLATES.md has hook integration section" || test_fail "TEMPLATES.md missing hook integration"
+grep -q "v1.2.0" "$PROJECT_ROOT/README.md" 2>/dev/null && test_pass "README mentions v1.2.0" || test_fail "README doesn't mention v1.2.0"
 
 # Summary
 echo ""

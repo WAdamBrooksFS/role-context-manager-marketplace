@@ -25,6 +25,12 @@ This command helps users update their organizational templates to newer versions
 
 # Preview changes without applying
 /sync-template --preview
+
+# Check-only mode (for SessionStart hook) - no prompts, no modifications
+/sync-template --check-only
+
+# Quiet mode with check-only (minimal output)
+/sync-template --check-only --quiet
 ```
 
 ## Auto-Update Behavior
@@ -59,7 +65,60 @@ When this command is executed, invoke the **template-sync agent** to handle the 
 1. **Parse command arguments**:
    - Check for `--force` flag (force update check)
    - Check for `--preview` flag (show changes without applying)
+   - Check for `--check-only` flag (check for updates without applying)
+   - Check for `--quiet` flag (minimal output)
    - Extract any other parameters
+
+**SPECIAL MODE: Check-Only (for SessionStart Hook)**
+
+**If `--check-only` flag is present, use this simplified flow instead:**
+
+1. **Check auto_update_templates preference first**:
+   ```javascript
+   // Read from .claude/preferences.json
+   if (preferences.auto_update_templates === false) {
+     // User opted out of automatic checks
+     // Exit silently with no output
+     return; // Exit code 0
+   }
+   ```
+
+2. **Check if template is tracked**:
+   ```javascript
+   if (!preferences.applied_template) {
+     // No template applied yet (setup incomplete)
+     // Exit silently with no output
+     return; // Exit code 0
+   }
+   ```
+
+3. **Compare versions**:
+   - Read `applied_template.id` and `applied_template.version` from preferences
+   - Check registry for latest version of same template
+   - Compare versions using semantic versioning
+
+4. **Output based on comparison**:
+   - **If up-to-date**:
+     - If `--quiet` flag: No output (silent success)
+     - Without `--quiet`: "✓ Template up-to-date (v1.0.0)"
+   - **If update available**:
+     - Output: "ℹ Template update available (v1.0.0 → v1.1.0). Run /sync-template to update."
+   - **If template not found in registry**:
+     - Silent (no error - might be custom template)
+
+5. **Exit codes**:
+   - Exit code 0: Up-to-date or check completed successfully
+   - Exit code 1: Update available (informational, not an error)
+
+6. **Do NOT**:
+   - Prompt user for any decisions
+   - Apply any updates or modifications
+   - Modify any files
+   - Show detailed change analysis
+   - Create backups
+   - Run merge operations
+
+**Standard Sync Mode (if --check-only NOT present):**
 
 2. **Check if template is tracked**:
    ```javascript

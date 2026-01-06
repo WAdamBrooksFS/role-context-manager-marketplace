@@ -448,6 +448,36 @@ This enables:
 - Your setup is highly customized
 - You prefer manual review before updates
 
+### SessionStart Hook Integration
+
+The SessionStart hook automatically checks for template updates when you start a session (if `auto_update_templates` is `true`):
+
+**How it works:**
+- **Silent check**: Compares your version with registry on every session start
+- **Non-intrusive**: Only notifies if update available, never applies automatically
+- **User control**: Never applies updates without your explicit approval
+- **Opt-out**: Set `auto_update_templates` to `false` to disable automatic checks
+
+**What you'll see:**
+```
+# If up-to-date
+✓ Template up-to-date (software-org v1.0.0)
+
+# If update available
+ℹ Template update available (v1.0.0 → v1.1.0). Run /sync-template to update.
+
+# If auto_update_templates is false
+(no output - checks are skipped)
+```
+
+**Benefits:**
+- Always aware of available updates without manual checking
+- Updates are announced but never forced
+- Organizational standards stay current across teams
+- Zero disruption to your workflow
+
+This ensures your organizational standards stay current without manual checking.
+
 ### What Gets Updated
 
 **Safe updates (applied automatically)**:

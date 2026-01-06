@@ -6,11 +6,14 @@ Display your current role and the documents that will load in Claude Code sessio
 
 ```bash
 /show-role-context
+
+# Or with summary flag for concise output
+/show-role-context --summary
 ```
 
 ## Arguments
 
-None
+- `--summary` (optional): Display one-line summary instead of full output
 
 ## What This Command Does
 
@@ -31,12 +34,38 @@ None
 
 When this command is executed:
 
-1. Call the role-manager.sh script with the show-role-context command:
+**1. Parse command arguments**:
+   - Check for `--summary` flag (one-line summary output)
+
+**2. If `--summary` flag present**:
+
+Use summary mode with one-line output format:
+
+```
+Role: [role-name] | Docs: [X] loaded, [Y] missing | Org: [level]
+```
+
+**Implementation for summary mode**:
+- Read preferences.json to get user_role and organizational level
+- Count documents from role-references (merged with local overrides)
+- Check existence of each document to count loaded vs missing
+- Output single-line summary
+- Do NOT show document list, legend, or suggestions
+- Exit after displaying summary
+
+**Examples**:
+- `Role: software-engineer | Docs: 5 loaded, 2 missing | Org: project`
+- `Role: product-manager | Docs: 8 loaded, 0 missing | Org: product`
+- `Role: not set | Docs: 0 loaded | Org: project` (if no role)
+
+**3. If `--summary` flag NOT present (standard mode)**:
+
+Call the role-manager.sh script with the show-role-context command:
    ```bash
    bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh show-role-context
    ```
 
-2. The script will:
+**4. The script will (standard mode)**:
    - Detect the organizational level
    - Read current role from `.claude/preferences.json`
    - Merge team defaults from `.claude/role-references.json`
@@ -44,14 +73,14 @@ When this command is executed:
    - Check existence of each document
    - Display formatted output
 
-3. If no role is set, display available roles and prompt to use `/set-role`
+**5. If no role is set (standard mode)**, display available roles and prompt to use `/set-role`
 
-4. Show legend explaining status indicators:
+**6. Show legend explaining status indicators (standard mode)**:
    - ✓ Document exists
    - ! Document missing
    - ? Document can be generated from template
 
-5. **NEW: Proactively suggest document generation**:
+**7. NEW: Proactively suggest document generation (standard mode)**:
    - If any documents are missing (! status), suggest:
      "Would you like me to generate the missing documents? Use /generate-document or I can generate them now."
    - If user wants generation, ask which documents to generate or offer to generate all missing ones

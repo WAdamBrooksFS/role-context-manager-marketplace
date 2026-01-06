@@ -1,6 +1,6 @@
 {
   "name": "role-context-manager",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Manage role-based document context for Claude Code sessions. Set your role, customize document references, and automatically load relevant context based on your organizational level.",
   "author": "Software Organization Template",
   "repository": "https://github.com/WAdamBrooksFS/role-context-manager-marketplace",
@@ -65,8 +65,22 @@
       "name": "sync-template",
       "description": "Sync template updates while preserving customizations",
       "file": "commands/sync-template.md"
+    },
+    {
+      "name": "setup-plugin-hooks",
+      "description": "Configure SessionStart hook for automatic validation and update checks",
+      "file": "commands/setup-plugin-hooks.md"
     }
   ],
+  "hooks": {
+    "session-start": {
+      "commands": [
+        "/validate-setup --quiet",
+        "/sync-template --check-only"
+      ],
+      "description": "Validate setup and check for template updates on session start"
+    }
+  },
   "agents": [
     {
       "name": "template-setup-assistant",
@@ -98,7 +112,8 @@
     "scripts/role-manager.sh",
     "scripts/doc-validator.sh",
     "scripts/level-detector.sh",
-    "scripts/template-manager.sh"
+    "scripts/template-manager.sh",
+    "scripts/post-install.sh"
   ],
   "requires": {
     "jq": ">=1.6",

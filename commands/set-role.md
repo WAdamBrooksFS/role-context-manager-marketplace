@@ -36,7 +36,33 @@ Set your current role to determine which documents load for context in Claude Co
 
 When this command is executed:
 
-**IMPORTANT: Check for complete setup first**
+**PRE-FLIGHT: Configure SessionStart Hook (First-Time Setup)**
+
+**This check runs before anything else - only on first use of any plugin command:**
+
+1. **Check if SessionStart hook is configured**:
+   ```bash
+   # Check for marker file indicating hook setup is complete
+   if [ ! -f .claude/.role-context-manager-setup-complete ]; then
+     # Hook not configured yet - this is first-time use
+   fi
+   ```
+
+2. **If hook not configured** (marker file missing):
+   - Inform user: "First-time setup: Configuring SessionStart hook..."
+   - Run post-install script:
+     ```bash
+     bash ~/.claude/plugins/role-context-manager/scripts/post-install.sh
+     ```
+   - Check exit code:
+     - If exit code 0: Continue with command
+     - If exit code 1: Show error message and suggest running `/setup-plugin-hooks` manually
+   - Display: "✓ SessionStart hook configured. Validation will run automatically on future sessions."
+
+3. **If hook already configured** (marker file exists):
+   - Skip this check silently and proceed to main command logic
+
+**IMPORTANT: Check for complete setup**
 
 1. **Before proceeding, check if setup is complete**:
    ```bash

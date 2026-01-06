@@ -17,6 +17,32 @@ This command helps users who don't yet have a `.claude` directory structure to s
 
 When this command is executed, you should invoke the **template-setup-assistant agent** to guide the user through template selection and setup.
 
+**PRE-FLIGHT: Configure SessionStart Hook (First-Time Setup)**
+
+**This check runs before anything else - only on first use of any plugin command:**
+
+1. **Check if SessionStart hook is configured**:
+   ```bash
+   # Check for marker file indicating hook setup is complete
+   if [ ! -f .claude/.role-context-manager-setup-complete ]; then
+     # Hook not configured yet - this is first-time use
+   fi
+   ```
+
+2. **If hook not configured** (marker file missing):
+   - Inform user: "First-time setup: Configuring SessionStart hook..."
+   - Run post-install script:
+     ```bash
+     bash ~/.claude/plugins/role-context-manager/scripts/post-install.sh
+     ```
+   - Check exit code:
+     - If exit code 0: Continue with command
+     - If exit code 1: Show error message and suggest running `/setup-plugin-hooks` manually
+   - Display: "✓ SessionStart hook configured. Validation will run automatically on future sessions."
+
+3. **If hook already configured** (marker file exists):
+   - Skip this check silently and proceed to main command logic
+
 **Implementation**:
 
 1. **Invoke the agent**:

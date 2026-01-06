@@ -25,6 +25,15 @@ This command performs comprehensive checks on your `.claude` directory, identifi
 
 # Validation with auto-fix (fixes issues automatically with confirmation)
 /validate-setup --fix
+
+# Silent mode (no output unless issues found) - for SessionStart hook
+/validate-setup --silent
+
+# Quiet mode (one-line summary) - for SessionStart hook
+/validate-setup --quiet
+
+# Summary mode (brief checklist of results)
+/validate-setup --summary
 ```
 
 ## Instructions for Claude
@@ -33,42 +42,110 @@ When this command is executed, invoke the **framework-validator agent** to perfo
 
 **Implementation**:
 
-1. **Parse command arguments**:
+**CRITICAL: First-Run Detection (Highest Priority)**
+
+**This check runs before anything else when invoked with `--quiet` or `--silent` flags:**
+
+1. **Check if `.claude` directory exists**:
+   ```bash
+   if [ ! -d .claude ]; then
+     # This is first run - no .claude directory exists yet
+   fi
+   ```
+
+2. **If `.claude` directory does NOT exist (first run)**:
+   - **Skip all other validation steps**
+   - Display welcome message:
+     ```
+     👋 Welcome to role-context-manager!
+
+     This plugin helps you organize documentation and maintain
+     role-based context for Claude Code sessions.
+
+     To get started, you need to initialize your organizational framework.
+     ```
+
+   - **Use AskUserQuestion tool** to ask:
+     - Question: "Would you like to initialize your organizational framework now?"
+     - Options:
+       1. "Yes, initialize now" → Invoke template-setup-assistant agent
+       2. "No, I'll do it later" → Show manual instructions
+       3. "What does this plugin do?" → Show brief explanation, ask again
+
+   - **If user chooses "Yes"**:
+     - Use Task tool to invoke template-setup-assistant agent
+     - Agent will guide through template selection and setup
+     - After completion: Show success and next steps
+
+   - **If user chooses "No"**:
+     - Display: "No problem! Run /init-org-template when you're ready."
+     - Exit with code 0 (don't show validation errors for missing .claude)
+
+   - **If user chooses "What does this plugin do?"**:
+     - Explain: "This plugin manages role-based documentation context. It helps Claude understand your role and automatically load relevant documents for better assistance."
+     - Ask the initialization question again
+
+3. **If `.claude` directory EXISTS**:
+   - Skip first-run mode
+   - Proceed to normal validation (step 4 below)
+
+**Standard Validation (after first-run check passes)**:
+
+4. **Parse command arguments**:
    - Check for `--quick` flag (run essential checks only)
    - Check for `--fix` flag (offer automated fixes)
+   - Check for `--silent` flag (no output unless issues found)
+   - Check for `--quiet` flag (one-line summary only)
+   - Check for `--summary` flag (brief checklist of results)
    - Extract any other parameters
 
-2. **Invoke the agent**:
+5. **Invoke the agent**:
    ```
    Use the Task tool with:
    - subagent_type: 'framework-validator'
    - description: 'Validate .claude directory setup'
-   - prompt: 'Perform comprehensive validation of the .claude directory structure and configuration. Check directory structure, validate JSON files, verify role guides exist and are properly formatted, validate reference integrity, check template tracking, and cross-reference documents. For each issue found, explain what's wrong, why it matters, how to fix it, and the likely root cause. Generate a detailed validation report.'
+   - prompt: 'Perform validation of the .claude directory structure and configuration. Check directory structure, validate JSON files, verify role guides exist and are properly formatted, validate reference integrity, check template tracking, and cross-reference documents. For each issue found, explain what's wrong, why it matters, how to fix it, and the likely root cause. Generate a validation report with appropriate verbosity based on flags provided.'
    ```
 
+   **Add to prompt based on flags**:
+
+   If `--silent` flag present:
+   - Add: 'SILENT MODE: Run all validation checks but produce NO OUTPUT unless validation fails. If issues found, show only critical errors with actionable suggestions. If all checks pass, produce no output at all.'
+
+   If `--quiet` flag present:
+   - Add: 'QUIET MODE: Run all validation checks but output only a concise one-line summary. Examples: "✓ Setup valid" or "⚠ 3 issues found (run /validate-setup for details)". Include severity indicator and brief action item.'
+
+   If `--summary` flag present:
+   - Add: 'SUMMARY MODE: Show brief checklist of validation results. Format: "✓ Check name" for passed, "✗ Check name" for failed. Include 5-8 most important checks. Examples: "✓ .claude directory exists", "✓ Role guides present (6 files)", "✗ User role not set (run /set-role)"'
+
    If `--quick` flag present:
-   - Add to prompt: 'Run only critical checks (directory structure, JSON validity, basic reference integrity). Skip detailed content validation and cross-referencing.'
+   - Add: 'Run only critical checks (directory structure, JSON validity, basic reference integrity). Skip detailed content validation and cross-referencing.'
 
    If `--fix` flag present:
-   - Add to prompt: 'After identifying issues, offer automated fixes for fixable problems. Get user approval before applying fixes.'
+   - Add: 'After identifying issues, offer automated fixes for fixable problems. Get user approval before applying fixes.'
 
-3. **The agent will**:
+6. **The agent will**:
    - Check directory structure (`.claude/`, `role-guides/`, `document-guides/`)
    - Validate all JSON configuration files
    - Verify role guides exist and are populated
    - Check reference integrity (roles, documents, templates)
    - Validate cross-references between files
    - Check template tracking if applied
-   - Generate comprehensive validation report
+   - Generate validation report (verbosity depends on flags)
    - Categorize issues by severity (Critical, Warning, Info)
-   - Explain each issue with context
-   - Offer automated fixes where possible
+   - Explain each issue with context (unless --silent or --quiet)
+   - Offer automated fixes where possible (if --fix flag present)
 
-4. **After agent completes**:
-   - Display validation summary
-   - Show critical issues first
+7. **After agent completes**:
+   - Display validation summary (verbosity based on flags)
+   - Show critical issues first (unless --silent mode passes)
    - Provide next steps if issues found
    - Confirm setup is healthy if all checks pass
+
+8. **Exit codes** (for SessionStart hook integration):
+   - Exit code 0: Validation passed, no issues
+   - Exit code 1: Warnings found, setup works but should review
+   - Exit code 2: Critical errors found, setup broken
 
 ## Example Usage
 
