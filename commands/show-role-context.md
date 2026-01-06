@@ -51,6 +51,12 @@ When this command is executed:
    - ! Document missing
    - ? Document can be generated from template
 
+5. **NEW: Proactively suggest document generation**:
+   - If any documents are missing (! status), suggest:
+     "Would you like me to generate the missing documents? Use /generate-document or I can generate them now."
+   - If user wants generation, ask which documents to generate or offer to generate all missing ones
+   - For each missing document, can invoke document-generator agent
+
 ## Example Output
 
 ### When Role is Set
@@ -70,6 +76,9 @@ Documents that will load on next session:
   - /quality-standards.md (custom removal)
 
 Legend: ✓ exists | ! missing | ? can be generated
+
+💡 Tip: Use /generate-document to create missing documents
+    Example: /generate-document development-setup
 
 Start a new session to load this context.
 ```

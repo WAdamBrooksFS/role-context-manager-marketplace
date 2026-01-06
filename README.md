@@ -8,12 +8,24 @@ This plugin helps teams organize and load documentation based on roles within an
 
 ## Features
 
+### Core Features (v1.0.0)
 - **Role-based context loading**: Automatically determine which documents to load based on your role
 - **Organizational hierarchy support**: Works at company, system, product, and project levels
 - **Flexible document management**: Add or remove documents using simple +/- syntax
 - **Team defaults + user overrides**: Share team configurations while allowing personal customizations
 - **Smart level detection**: Automatically detects organizational level or prompts when ambiguous
 - **Integration with role guides**: Reads document references from existing role-guide files
+
+### New in v1.1.0: Templates & Intelligent Agents
+- **Template Discovery**: Initialize organizational frameworks from bundled templates
+- **Intelligent Setup Assistant**: AI guides you through template selection based on your context
+- **Document Generation**: Generate organizational documents from templates with role-aware content
+- **Custom Role Guides**: Create new role guides following your organization's patterns
+- **Setup Validation**: Comprehensive checks with automated fixes for configuration issues
+- **Auto-Update Templates**: Keep organizational standards synchronized across teams
+- **Bundled Templates**:
+  - **Software Organization** - Full framework for established companies (50+ people)
+  - **Startup Organization** - Lean framework for early-stage startups (0-10 people)
 
 ## Installation
 
@@ -32,6 +44,23 @@ claude-code plugin install role-context-manager
 
 ## Quick Start
 
+### For New Users (v1.1.0+): Initialize from Template
+
+If you don't have a `.claude` directory yet, start with a template:
+
+```bash
+/init-org-template
+```
+
+The setup assistant will:
+- Analyze your project structure
+- Recommend appropriate template (startup vs enterprise)
+- Guide you through template selection
+- Initialize role guides and organizational documents
+- Help you set your role
+
+### For Existing Users: Traditional Setup
+
 ### 1. Set Your Organizational Level
 
 If your project structure isn't automatically detected:
@@ -47,6 +76,7 @@ If your project structure isn't automatically detected:
 ```
 
 This will:
+- Auto-trigger template setup if .claude directory is incomplete
 - Update your preferences.json with the role
 - Initialize role-specific document references
 - Show which documents will load on next session
@@ -61,6 +91,7 @@ Shows:
 - Current role
 - Documents that will load (with existence status)
 - Custom additions and removals
+- Suggestions for generating missing documents
 
 ### 4. Customize Documents
 
@@ -454,6 +485,41 @@ MIT License - See LICENSE file for details
 - **Documentation**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/wiki
 
 ## Changelog
+
+### v1.1.0 (2026-01-05) - Templates & Intelligent Agents
+**New Commands**:
+- `/init-org-template` - Initialize organizational framework from templates
+- `/generate-document` - Generate documents from templates with role context
+- `/create-role-guide` - Create custom role guides following patterns
+- `/validate-setup` - Validate and troubleshoot .claude directory
+- `/sync-template` - Sync template updates while preserving customizations
+
+**New Intelligent Agents**:
+- **template-setup-assistant** - Analyzes context, recommends templates, guides setup
+- **document-generator** - Creates role-aware documents from templates
+- **role-guide-generator** - Generates custom role guides learning from existing patterns
+- **framework-validator** - Deep validation with explanations and automated fixes
+- **template-sync** - Intelligent merge of template updates with customization preservation
+
+**Bundled Templates**:
+- **software-org** v1.0.0 - Full organizational framework (6 role guides, 3 document guides, 14 org docs)
+- **startup-org** v1.0.0 - Lean startup framework (flat structure, fundraising support)
+
+**Enhanced Features**:
+- Auto-trigger template setup when .claude is incomplete
+- Proactive document generation suggestions
+- Template version tracking and auto-update support (opt-in/out)
+- Backup and rollback capabilities for template operations
+- Enhanced commands with template integration
+
+**Configuration**:
+- New `auto_update_templates` preference (default: true)
+- New `applied_template` tracking (id, version, applied_date)
+- Template registry system for version management
+
+**Scripts**:
+- New `template-manager.sh` for template operations
+- Enhanced `role-manager.sh` with setup checking functions
 
 ### v1.0.0 (Initial Release)
 - Role-based context management

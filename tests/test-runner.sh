@@ -30,6 +30,7 @@ test_section "Script Executability"
 [[ -x "$PROJECT_ROOT/scripts/doc-validator.sh" ]] && test_pass "doc-validator.sh is executable" || test_fail "doc-validator.sh not executable"
 [[ -x "$PROJECT_ROOT/scripts/level-detector.sh" ]] && test_pass "level-detector.sh is executable" || test_fail "level-detector.sh not executable"
 [[ -x "$PROJECT_ROOT/scripts/role-manager.sh" ]] && test_pass "role-manager.sh is executable" || test_fail "role-manager.sh not executable"
+[[ -x "$PROJECT_ROOT/scripts/template-manager.sh" ]] && test_pass "template-manager.sh is executable" || test_fail "template-manager.sh not executable"
 
 # Test 3: JSON validation
 test_section "JSON Validation"
@@ -54,12 +55,19 @@ test_section "Command Files"
 [[ -f "$PROJECT_ROOT/commands/update-role-docs.md" ]] && test_pass "update-role-docs.md exists" || test_fail "update-role-docs.md missing"
 [[ -f "$PROJECT_ROOT/commands/init-role-docs.md" ]] && test_pass "init-role-docs.md exists" || test_fail "init-role-docs.md missing"
 [[ -f "$PROJECT_ROOT/commands/set-org-level.md" ]] && test_pass "set-org-level.md exists" || test_fail "set-org-level.md missing"
+# v1.1.0 commands
+[[ -f "$PROJECT_ROOT/commands/init-org-template.md" ]] && test_pass "init-org-template.md exists" || test_fail "init-org-template.md missing"
+[[ -f "$PROJECT_ROOT/commands/generate-document.md" ]] && test_pass "generate-document.md exists" || test_fail "generate-document.md missing"
+[[ -f "$PROJECT_ROOT/commands/create-role-guide.md" ]] && test_pass "create-role-guide.md exists" || test_fail "create-role-guide.md missing"
+[[ -f "$PROJECT_ROOT/commands/validate-setup.md" ]] && test_pass "validate-setup.md exists" || test_fail "validate-setup.md missing"
+[[ -f "$PROJECT_ROOT/commands/sync-template.md" ]] && test_pass "sync-template.md exists" || test_fail "sync-template.md missing"
 
 # Test 6: Script files exist
 test_section "Script Files"
 [[ -f "$PROJECT_ROOT/scripts/role-manager.sh" ]] && test_pass "role-manager.sh exists" || test_fail "role-manager.sh missing"
 [[ -f "$PROJECT_ROOT/scripts/doc-validator.sh" ]] && test_pass "doc-validator.sh exists" || test_fail "doc-validator.sh missing"
 [[ -f "$PROJECT_ROOT/scripts/level-detector.sh" ]] && test_pass "level-detector.sh exists" || test_fail "level-detector.sh missing"
+[[ -f "$PROJECT_ROOT/scripts/template-manager.sh" ]] && test_pass "template-manager.sh exists" || test_fail "template-manager.sh missing"
 
 # Test 7: Documentation sections
 test_section "Documentation"
@@ -93,6 +101,49 @@ fi
 test_section "Repository URL"
 REPO_URL=$(jq -r '.repository' "$PROJECT_ROOT/plugin.json" 2>/dev/null)
 [[ "$REPO_URL" != *"your-org"* ]] && test_pass "Repository URL updated" || test_fail "Repository URL still has placeholder"
+
+# Test 11: Agent files exist (v1.1.0)
+test_section "Agent Files"
+[[ -f "$PROJECT_ROOT/agents/template-setup-assistant/agent.md" ]] && test_pass "template-setup-assistant agent exists" || test_fail "template-setup-assistant agent missing"
+[[ -f "$PROJECT_ROOT/agents/document-generator/agent.md" ]] && test_pass "document-generator agent exists" || test_fail "document-generator agent missing"
+[[ -f "$PROJECT_ROOT/agents/role-guide-generator/agent.md" ]] && test_pass "role-guide-generator agent exists" || test_fail "role-guide-generator agent missing"
+[[ -f "$PROJECT_ROOT/agents/framework-validator/agent.md" ]] && test_pass "framework-validator agent exists" || test_fail "framework-validator agent missing"
+[[ -f "$PROJECT_ROOT/agents/template-sync/agent.md" ]] && test_pass "template-sync agent exists" || test_fail "template-sync agent missing"
+
+# Test 12: Template structure (v1.1.0)
+test_section "Template Structure"
+[[ -f "$PROJECT_ROOT/templates/registry.json" ]] && test_pass "Template registry exists" || test_fail "Template registry missing"
+[[ -d "$PROJECT_ROOT/templates/software-org" ]] && test_pass "software-org template directory exists" || test_fail "software-org template directory missing"
+[[ -d "$PROJECT_ROOT/templates/startup-org" ]] && test_pass "startup-org template directory exists" || test_fail "startup-org template directory missing"
+[[ -f "$PROJECT_ROOT/templates/software-org/manifest.json" ]] && test_pass "software-org manifest exists" || test_fail "software-org manifest missing"
+[[ -f "$PROJECT_ROOT/templates/startup-org/manifest.json" ]] && test_pass "startup-org manifest exists" || test_fail "startup-org manifest missing"
+
+# Test 13: Template content validation (v1.1.0)
+test_section "Template Content"
+if [[ -d "$PROJECT_ROOT/templates/software-org/.claude/role-guides" ]]; then
+    ROLE_GUIDE_COUNT=$(find "$PROJECT_ROOT/templates/software-org/.claude/role-guides" -name "*.md" 2>/dev/null | wc -l)
+    [[ $ROLE_GUIDE_COUNT -gt 0 ]] && test_pass "software-org has $ROLE_GUIDE_COUNT role guides" || test_fail "software-org has no role guides"
+else
+    test_fail "software-org role-guides directory missing"
+fi
+
+if command -v jq &> /dev/null; then
+    jq empty "$PROJECT_ROOT/templates/registry.json" 2>/dev/null && test_pass "Template registry is valid JSON" || test_fail "Template registry invalid JSON"
+    jq empty "$PROJECT_ROOT/templates/software-org/manifest.json" 2>/dev/null && test_pass "software-org manifest is valid JSON" || test_fail "software-org manifest invalid JSON"
+    jq empty "$PROJECT_ROOT/templates/startup-org/manifest.json" 2>/dev/null && test_pass "startup-org manifest is valid JSON" || test_fail "startup-org manifest invalid JSON"
+fi
+
+# Test 14: Agent count in plugin.json (v1.1.0)
+test_section "Plugin Configuration"
+AGENT_COUNT=$(jq '.agents | length' "$PROJECT_ROOT/plugin.json" 2>/dev/null || echo "0")
+[[ $AGENT_COUNT -eq 5 ]] && test_pass "plugin.json has 5 agents" || test_fail "plugin.json has $AGENT_COUNT agents (expected 5)"
+COMMAND_COUNT_V11=$(jq '.commands | length' "$PROJECT_ROOT/plugin.json" 2>/dev/null || echo "0")
+[[ $COMMAND_COUNT_V11 -eq 10 ]] && test_pass "plugin.json has 10 commands" || test_fail "plugin.json has $COMMAND_COUNT_V11 commands (expected 10)"
+
+# Test 15: Documentation (v1.1.0)
+test_section "Documentation v1.1.0"
+[[ -f "$PROJECT_ROOT/TEMPLATES.md" ]] && test_pass "TEMPLATES.md exists" || test_fail "TEMPLATES.md missing"
+grep -q "v1.1.0" "$PROJECT_ROOT/README.md" 2>/dev/null && test_pass "README mentions v1.1.0" || test_fail "README doesn't mention v1.1.0"
 
 # Summary
 echo ""

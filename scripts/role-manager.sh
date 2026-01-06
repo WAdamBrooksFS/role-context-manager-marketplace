@@ -618,7 +618,108 @@ cmd_update_role_docs() {
     cmd_show_role_context
 }
 
+# =============================================================================
+# Template Integration Functions (v1.1.0)
+# =============================================================================
+
+# Check if .claude setup is complete and ready to use
+check_setup_complete() {
+    local claude_dir="${1:-.claude}"
+
+    # Check if .claude directory exists
+    if [[ ! -d "$claude_dir" ]]; then
+        return 1
+    fi
+
+    # Check if role-guides directory exists and has files
+    if [[ ! -d "$claude_dir/role-guides" ]]; then
+        return 1
+    fi
+
+    local guide_count
+    guide_count=$(find "$claude_dir/role-guides" -name "*.md" 2>/dev/null | wc -l)
+    if [[ $guide_count -eq 0 ]]; then
+        return 1
+    fi
+
+    # Check if organizational-level.json exists
+    if [[ ! -f "$claude_dir/organizational-level.json" ]]; then
+        # This is not critical, but preferred
+        :
+    fi
+
+    # Check if preferences.json exists
+    if [[ ! -f "$claude_dir/preferences.json" ]]; then
+        # This will be created on first use, so not critical
+        :
+    fi
+
+    # Setup appears complete
+    return 0
+}
+
+# Get list of missing setup items
+get_missing_setup_items() {
+    local claude_dir="${1:-.claude}"
+    local missing=()
+
+    if [[ ! -d "$claude_dir" ]]; then
+        missing+=(".claude directory")
+    fi
+
+    if [[ ! -d "$claude_dir/role-guides" ]]; then
+        missing+=("role-guides directory")
+    elif [[ $(find "$claude_dir/role-guides" -name "*.md" 2>/dev/null | wc -l) -eq 0 ]]; then
+        missing+=("role guide files")
+    fi
+
+    if [[ ! -f "$claude_dir/organizational-level.json" ]]; then
+        missing+=("organizational-level.json (recommended)")
+    fi
+
+    if [[ ! -f "$claude_dir/preferences.json" ]]; then
+        missing+=("preferences.json (will be created)")
+    fi
+
+    if [[ ! -f "$claude_dir/role-references.json" ]]; then
+        missing+=("role-references.json (will be created)")
+    fi
+
+    # Print missing items as JSON array for easy parsing
+    if command -v jq &>/dev/null; then
+        printf '%s\n' "${missing[@]}" | jq -R . | jq -s .
+    else
+        # Fallback to newline-separated list
+        printf '%s\n' "${missing[@]}"
+    fi
+}
+
+# Check if template updates are available
+check_template_updates() {
+    local claude_dir="${1:-.claude}"
+
+    # Source template-manager.sh to access its functions
+    local script_dir="$(dirname "${BASH_SOURCE[0]}")"
+    if [[ -f "$script_dir/template-manager.sh" ]]; then
+        source "$script_dir/template-manager.sh"
+
+        local version_check
+        version_check=$(check_template_version "$claude_dir/preferences.json" 2>/dev/null)
+
+        if [[ $version_check == update-available:* ]]; then
+            echo "true"
+            return 0
+        fi
+    fi
+
+    echo "false"
+    return 0
+}
+
+# =============================================================================
 # Main dispatcher (not typically called directly)
+# =============================================================================
+
 main() {
     local command="${1:-}"
     shift || true

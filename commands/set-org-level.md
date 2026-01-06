@@ -94,7 +94,25 @@ When this command is executed:
 
 1. Parse the level argument (if provided)
 
-2. Call the level-detector.sh script:
+2. **Check if .claude directory exists**:
+   ```bash
+   if [ ! -d .claude ]; then
+     # No .claude directory - first time setup
+   fi
+   ```
+
+3. **If .claude doesn't exist** (first-time setup):
+   - Inform user: "You don't have a .claude directory yet."
+   - Suggest: "Would you like to initialize your organizational framework?"
+   - Based on the level they're trying to set, recommend appropriate template:
+     - **company or system level** → Suggest software-org template (established company)
+     - **project level** → Ask company size:
+       - Small (0-10 people) → Suggest startup-org template
+       - Larger (50+ people) → Suggest software-org template
+   - If user agrees, invoke template-setup-assistant agent
+   - After template setup, proceed with setting level
+
+4. **If .claude exists**, call the level-detector.sh script:
    ```bash
    # Show current level
    bash ~/.claude/plugins/role-context-manager/scripts/level-detector.sh
@@ -103,20 +121,20 @@ When this command is executed:
    # Create or update .claude/organizational-level.json
    ```
 
-3. If no argument (show mode):
+5. If no argument (show mode):
    - Detect or read current level
    - List available roles at this level from `.claude/role-guides/`
    - Show current role if set
    - Display whether current role is valid for this level
 
-4. If level argument provided (set mode):
+6. If level argument provided (set mode):
    - Validate level is one of: company, system, product, project
    - Create `.claude/organizational-level.json` with the level
    - Check if current role exists at new level
    - If current role invalid, prompt to use `/set-role`
    - List available roles at new level
 
-5. After setting level, check role compatibility:
+7. After setting level, check role compatibility:
    - If role guide exists at new level: ✓ valid
    - If role guide missing at new level: prompt to change role
 
