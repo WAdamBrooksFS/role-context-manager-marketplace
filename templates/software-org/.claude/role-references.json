@@ -1,0 +1,21 @@
+{
+  "cto-vp-engineering": {
+    "default_documents": [],
+    "user_customizations": []
+  },
+  "product-manager": {
+    "default_documents": [
+      "product-*/docs/product-requirements-documents/*.md",
+      "product-*/roadmap.md",
+      "product-*/docs/release-notes.md",
+      "product-*/product-overview.md",
+      "/objectives-and-key-results.md",
+      "/strategy.md",
+      "/product-vision.md",
+      "system-*/objectives-and-key-results.md",
+      "/docs/templates/product-requirements-document-template.md",
+      "/docs/templates/user-story-template.md"
+    ],
+    "user_customizations": []
+  }
+}

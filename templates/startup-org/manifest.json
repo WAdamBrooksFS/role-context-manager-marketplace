@@ -1,0 +1,58 @@
+{
+  "id": "startup-org",
+  "name": "Startup Organization",
+  "version": "1.0.0",
+  "description": "Lean framework for pre-seed to seed stage start-ups (0-10 people) focused on speed, iteration, and product-market fit",
+  "org_levels": ["company"],
+  "target_audience": "Pre-seed to seed stage start-ups (0-10 people), founders wearing multiple hats, fast iteration focus",
+  "roles": [
+    "founder-ceo",
+    "technical-cofounder-cto",
+    "product-cofounder-cpo",
+    "founding-engineer",
+    "early-hire",
+    "advisor"
+  ],
+  "included_files": {
+    ".claude/role-guides": "Role guides directory (to be populated as needed)",
+    "organizational_docs": [
+      "CLAUDE.md",
+      "FRAMEWORK-SUMMARY.md",
+      "IMPLEMENTATION-STATUS.md",
+      "README.md"
+    ],
+    "organizational_structure": [
+      "strategic/ - Vision, OKRs, strategy, roadmap",
+      "fundraising/ - Pitch deck, investor updates",
+      "product/ - Feature specs, user research",
+      "engineering/ - Standards, tech stack, setup",
+      "operations/ - Security, handbook, metrics",
+      "docs/templates/ - Reusable document templates"
+    ]
+  },
+  "features": [
+    "Flat organizational structure (no hierarchy)",
+    "Lean documentation (50% shorter than enterprise)",
+    "Multi-hat role guidance",
+    "Fundraising support",
+    "Speed over perfection philosophy",
+    "Progressive complexity (grow as you scale)",
+    "Product-market fit focus"
+  ],
+  "when_to_use": [
+    "Pre-seed or seed stage (0-10 people)",
+    "Founders still searching for product-market fit",
+    "Team wears multiple hats",
+    "Limited resources (time, money, people)",
+    "Fundraising or preparing to fundraise",
+    "Need speed and fast iteration over formal processes"
+  ],
+  "graduation_path": "Consider moving to software-org template when: 50+ people, Series B+ funding, multiple products/systems, need formal processes/compliance, management layers established",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-01-05",
+      "changes": ["Initial release bundled with role-context-manager v1.1.0"]
+    }
+  ]
+}

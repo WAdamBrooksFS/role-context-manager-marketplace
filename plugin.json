@@ -1,6 +1,6 @@
 {
   "name": "role-context-manager",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Manage role-based document context for Claude Code sessions. Set your role, customize document references, and automatically load relevant context based on your organizational level.",
   "author": "Software Organization Template",
   "repository": "https://github.com/WAdamBrooksFS/role-context-manager-marketplace",
@@ -10,7 +10,10 @@
     "context-loading",
     "documentation",
     "organizational-hierarchy",
-    "developer-workflow"
+    "developer-workflow",
+    "templates",
+    "agents",
+    "document-generation"
   ],
   "commands": [
     {
@@ -37,12 +40,65 @@
       "name": "set-org-level",
       "description": "Set organizational level (company/system/product/project)",
       "file": "commands/set-org-level.md"
+    },
+    {
+      "name": "init-org-template",
+      "description": "Initialize organizational framework from a template",
+      "file": "commands/init-org-template.md"
+    },
+    {
+      "name": "generate-document",
+      "description": "Generate documents from templates using role context",
+      "file": "commands/generate-document.md"
+    },
+    {
+      "name": "create-role-guide",
+      "description": "Create new role guides following established patterns",
+      "file": "commands/create-role-guide.md"
+    },
+    {
+      "name": "validate-setup",
+      "description": "Validate .claude directory structure and configuration",
+      "file": "commands/validate-setup.md"
+    },
+    {
+      "name": "sync-template",
+      "description": "Sync template updates while preserving customizations",
+      "file": "commands/sync-template.md"
+    }
+  ],
+  "agents": [
+    {
+      "name": "template-setup-assistant",
+      "description": "Intelligent setup assistant for organizational templates",
+      "file": "agents/template-setup-assistant/agent.md"
+    },
+    {
+      "name": "document-generator",
+      "description": "Generate documents from templates using role context",
+      "file": "agents/document-generator/agent.md"
+    },
+    {
+      "name": "role-guide-generator",
+      "description": "Create new role guides following established patterns",
+      "file": "agents/role-guide-generator/agent.md"
+    },
+    {
+      "name": "framework-validator",
+      "description": "Validate .claude directory structure and configuration",
+      "file": "agents/framework-validator/agent.md"
+    },
+    {
+      "name": "template-sync",
+      "description": "Sync template updates while preserving customizations",
+      "file": "agents/template-sync/agent.md"
     }
   ],
   "scripts": [
     "scripts/role-manager.sh",
     "scripts/doc-validator.sh",
-    "scripts/level-detector.sh"
+    "scripts/level-detector.sh",
+    "scripts/template-manager.sh"
   ],
   "requires": {
     "jq": ">=1.6",
@@ -53,6 +109,21 @@
       "user_role": {
         "type": "string",
         "description": "Current user role",
+        "default": null
+      },
+      "auto_update_templates": {
+        "type": "boolean",
+        "description": "Automatically adopt latest template versions",
+        "default": true
+      },
+      "applied_template": {
+        "type": "object",
+        "description": "Information about the applied organizational template",
+        "properties": {
+          "id": "string",
+          "version": "string",
+          "applied_date": "string"
+        },
         "default": null
       }
     },

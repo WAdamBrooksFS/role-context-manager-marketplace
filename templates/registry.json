@@ -1,0 +1,41 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-01-05",
+  "bundled": [
+    {
+      "id": "software-org",
+      "name": "Full Software Organization",
+      "description": "Complete framework for established software companies",
+      "version": "1.0.0",
+      "path": "templates/software-org",
+      "org_levels": ["company", "system", "product", "project"],
+      "roles_count": 6,
+      "target_audience": "Established companies (50+ people)",
+      "features": [
+        "Hierarchical organization",
+        "Comprehensive role guides",
+        "Enterprise-grade standards",
+        "Multi-level OKRs"
+      ],
+      "last_updated": "2026-01-05"
+    },
+    {
+      "id": "startup-org",
+      "name": "Startup Organization",
+      "description": "Lean framework for early-stage startups (0-10 people)",
+      "version": "1.0.0",
+      "path": "templates/startup-org",
+      "org_levels": ["company"],
+      "roles_count": 6,
+      "target_audience": "Pre-seed to seed stage startups",
+      "features": [
+        "Flat organization",
+        "Lean documentation",
+        "Multi-hat role guidance",
+        "Fundraising support"
+      ],
+      "last_updated": "2026-01-05"
+    }
+  ],
+  "external": []
+}
