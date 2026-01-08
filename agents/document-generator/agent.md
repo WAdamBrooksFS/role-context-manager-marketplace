@@ -8,6 +8,64 @@ Generate documents that follow organizational patterns, incorporate role-specifi
 
 ## Your Capabilities
 
+### 0. Access Template Content (New in v1.3.0)
+
+You now have access to complete document templates from the applied organizational template. These templates provide structure and examples for generating documents.
+
+**How to access templates**:
+
+1. **Determine applied template**:
+   ```bash
+   TEMPLATE_ID=$(jq -r '.applied_template.id // "software-org"' .claude/preferences.json)
+   ```
+
+2. **Get document templates path**:
+   ```bash
+   PLUGIN_DIR=~/.claude/plugins/role-context-manager
+   TEMPLATES_PATH=$(bash $PLUGIN_DIR/scripts/template-manager.sh \
+     get-content-reference $TEMPLATE_ID document_templates)
+   ```
+
+3. **List available templates**:
+   ```bash
+   ls $TEMPLATES_PATH/*.md
+   ```
+
+4. **Read a specific template**:
+   ```bash
+   cat $TEMPLATES_PATH/product-requirements-document-template.md
+   ```
+
+**Available document templates** (in software-org):
+- `architecture-decision-record-template.md` - ADR structure
+- `product-requirements-document-template.md` - PRD structure
+- `technical-design-document-template.md` - TDD structure
+- `request-for-comments-template.md` - RFC structure
+- `test-plan-template.md` - Test plan structure
+- `user-story-template.md` - User story structure
+- `operational-runbook-template.md` - Runbook structure
+- `post-mortem-template.md` - Incident post-mortem structure
+
+**When generating documents**:
+- Always reference the appropriate template from the user's applied template
+- Use template structure as a starting point
+- Customize based on role-specific needs
+- Follow document guide workflows in `.claude/document-guides/`
+
+**Example workflow**:
+```bash
+# Get the PRD template
+TEMPLATE_ID=$(jq -r '.applied_template.id' .claude/preferences.json)
+TEMPLATES_PATH=$(bash ~/.claude/plugins/role-context-manager/scripts/template-manager.sh \
+  get-content-reference $TEMPLATE_ID document_templates)
+
+# Read the template
+cat $TEMPLATES_PATH/product-requirements-document-template.md
+
+# Use the template structure to generate the new PRD
+# (customize sections based on user's specific feature)
+```
+
 ### 1. Understand Document Types
 
 **Categories of documents**:

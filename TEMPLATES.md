@@ -46,11 +46,12 @@ Templates help teams get started quickly with best practices and consistent stru
 
 ## Bundled Templates
 
-The plugin includes two templates covering different organizational stages:
+The plugin includes two **complete** templates covering different organizational stages. As of v1.3.0, templates include full organizational frameworks with document templates, process guides, and examples.
 
 ### Software Organization Template (`software-org`)
 
-**Version**: 1.0.0
+**Version**: 2.0.0 (updated in plugin v1.3.0)
+**Size**: 748KB with 70 files
 **Target Audience**: Established software companies with 50+ people, multiple teams, and formal processes
 
 **When to use**:
@@ -79,6 +80,19 @@ The plugin includes two templates covering different organizational stages:
   - `roles-and-responsibilities.md` - Organizational structure
   - `security-policy.md` - Security requirements
   - `strategy.md` - Company strategy
+- **8 document templates** (NEW in v2.0.0):
+  - Architecture Decision Record (ADR)
+  - Product Requirements Document (PRD)
+  - Technical Design Document (TDD)
+  - Request for Comments (RFC)
+  - Test Plan
+  - User Story
+  - Operational Runbook
+  - Post-Mortem
+- **Process guides** (NEW in v2.0.0):
+  - Incident Response
+  - Document Standards Guide
+- **Hierarchical examples** (NEW in v2.0.0): Complete 4-tier structure (system/product/project)
 
 **Organizational structure**: Hierarchical (company → system → product → project)
 
@@ -86,7 +100,8 @@ The plugin includes two templates covering different organizational stages:
 
 ### Startup Organization Template (`startup-org`)
 
-**Version**: 1.0.0
+**Version**: 2.0.0 (updated in plugin v1.3.0)
+**Size**: 260KB with 19 files
 **Target Audience**: Pre-seed to seed stage startups (0-10 people), fast iteration focus
 
 **When to use**:
@@ -207,6 +222,64 @@ Available roles in this template:
 - advisor
 
 Would you like me to help you set your role now?
+```
+
+### Application Modes (NEW in v1.3.0)
+
+When applying a template, you can choose how much content to install. The template-setup-assistant will offer these options:
+
+#### 1. Minimal Mode
+**What's included**: Just the `.claude/` directory
+- Role guides
+- Document guides
+- Configuration files (organizational-level.json, role-references.json)
+
+**Use case**: Existing project with established docs, just adding AI collaboration
+
+**Size**: Smallest footprint
+
+#### 2. Standard Mode (Recommended)
+**What's included**: `.claude/` + organizational documents
+- Everything from Minimal mode
+- All organizational documents (standards, policies, strategy, OKRs, etc.)
+
+**Use case**: New project or updating organizational framework
+
+**Size**: Medium footprint
+
+#### 3. Complete Mode
+**What's included**: Everything
+- Everything from Standard mode
+- Document templates (PRD, ADR, RFC, Test Plan, etc.)
+- Process guides (incident response, document standards)
+- Hierarchical examples (system/product/project structure)
+
+**Use case**: Greenfield setup or comprehensive framework adoption
+
+**Size**: Full footprint (748KB for software-org, 260KB for startup-org)
+
+#### How Agents Use Templates
+
+With complete templates bundled, agents can now access template content:
+
+**Document Generator**:
+```bash
+# Agents can access document templates
+TEMPLATE_ID=$(jq -r '.applied_template.id' .claude/preferences.json)
+TEMPLATES_PATH=$(bash ~/.claude/plugins/role-context-manager/scripts/template-manager.sh \
+  get-content-reference $TEMPLATE_ID document_templates)
+
+# Use templates as starting points for document generation
+cat $TEMPLATES_PATH/product-requirements-document-template.md
+```
+
+**Role Guide Generator**:
+```bash
+# Agents can reference existing role guides as examples
+ROLE_GUIDES_PATH=$(bash ~/.claude/plugins/role-context-manager/scripts/template-manager.sh \
+  get-content-reference $TEMPLATE_ID claude_config)
+
+ls $ROLE_GUIDES_PATH/role-guides/
 ```
 
 ---

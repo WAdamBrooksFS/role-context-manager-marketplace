@@ -1,40 +1,66 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-01-05",
+  "last_updated": "2026-01-06",
   "bundled": [
     {
       "id": "software-org",
       "name": "Full Software Organization",
       "description": "Complete framework for established software companies",
-      "version": "1.0.0",
-      "path": "templates/software-org",
+      "version": "2.0.0",
+      "path": "templates/core/software-org",
+      "content_type": "core",
+      "size_kb": 748,
+      "files_count": 70,
       "org_levels": ["company", "system", "product", "project"],
       "roles_count": 6,
       "target_audience": "Established companies (50+ people)",
       "features": [
         "Hierarchical organization",
-        "Comprehensive role guides",
+        "Comprehensive role guides (6 roles)",
+        "Document generation guides (8 document types)",
         "Enterprise-grade standards",
-        "Multi-level OKRs"
+        "Multi-level OKRs",
+        "Complete document templates (PRD, ADR, RFC, etc.)",
+        "Process guides (incident response, etc.)",
+        "Hierarchical examples (system/product/project structure)"
       ],
-      "last_updated": "2026-01-05"
+      "included_content": {
+        "organizational_docs": 14,
+        "role_guides": 6,
+        "document_guides": 3,
+        "document_templates": 8,
+        "process_guides": 2,
+        "hierarchical_examples": true
+      },
+      "last_updated": "2026-01-06"
     },
     {
       "id": "startup-org",
       "name": "Startup Organization",
       "description": "Lean framework for early-stage startups (0-10 people)",
-      "version": "1.0.0",
-      "path": "templates/startup-org",
+      "version": "2.0.0",
+      "path": "templates/core/startup-org",
+      "content_type": "core",
+      "size_kb": 260,
+      "files_count": 19,
       "org_levels": ["company"],
       "roles_count": 6,
       "target_audience": "Pre-seed to seed stage startups",
       "features": [
         "Flat organization",
-        "Lean documentation",
+        "Lean documentation (50% shorter)",
         "Multi-hat role guidance",
-        "Fundraising support"
+        "Fundraising support",
+        "Speed-focused workflows",
+        "Document templates"
       ],
-      "last_updated": "2026-01-05"
+      "included_content": {
+        "organizational_docs": 4,
+        "role_guides": 6,
+        "document_templates": 6,
+        "fundraising_docs": 4
+      },
+      "last_updated": "2026-01-06"
     }
   ],
   "external": []

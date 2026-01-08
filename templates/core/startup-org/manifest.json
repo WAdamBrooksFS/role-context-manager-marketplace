@@ -1,0 +1,175 @@
+{
+  "id": "startup-org",
+  "name": "Startup Organization",
+  "version": "2.0.0",
+  "description": "Lean framework for early-stage startups (0-10 people) with flat organizational structure, fundraising support, and speed-focused workflows",
+  "org_levels": ["company"],
+  "target_audience": "Pre-seed to seed stage startups with 0-10 people, lean team structure, and rapid iteration needs",
+
+  "roles": [
+    "founder-ceo",
+    "co-founder-cto",
+    "founding-engineer",
+    "product-lead",
+    "growth-lead",
+    "operations-lead"
+  ],
+
+  "content_structure": {
+    "root_docs": {
+      "path": ".",
+      "files": [
+        "CLAUDE.md",
+        "FRAMEWORK-SUMMARY.md",
+        "IMPLEMENTATION-STATUS.md",
+        "README.md"
+      ],
+      "purpose": "Core framework documentation"
+    },
+
+    "claude_config": {
+      "path": ".claude",
+      "role_guides": {
+        "path": ".claude/role-guides",
+        "count": 0,
+        "files": [],
+        "purpose": "Role-specific AI collaboration guides (to be populated)",
+        "note": "Directory structure ready for role guide generation"
+      },
+      "config_files": {
+        "organizational-level.json": "Organizational level configuration (flat structure)",
+        "role-references.json": "Role-to-document mappings"
+      }
+    },
+
+    "strategic_docs": {
+      "path": "strategic",
+      "count": 4,
+      "files": [
+        "objectives-and-key-results.md",
+        "roadmap.md",
+        "strategy.md",
+        "vision-and-mission.md"
+      ],
+      "purpose": "Strategic planning and direction"
+    },
+
+    "fundraising_docs": {
+      "path": "fundraising",
+      "count": 4,
+      "files": [
+        "cap-table-guide.md",
+        "fundraising-tracker.md",
+        "investor-updates-template.md",
+        "pitch-deck-guide.md"
+      ],
+      "purpose": "Fundraising materials and tracking"
+    },
+
+    "engineering_docs": {
+      "path": "engineering",
+      "count": 5,
+      "files": [
+        "architecture-overview.md",
+        "contributing.md",
+        "development-setup.md",
+        "engineering-standards.md",
+        "tech-stack.md"
+      ],
+      "purpose": "Engineering practices and technical documentation"
+    },
+
+    "product_docs": {
+      "path": "product",
+      "count": 2,
+      "files": [
+        "product-overview.md",
+        "user-research-notes.md"
+      ],
+      "subdirectories": ["feature-specs"],
+      "purpose": "Product strategy and feature documentation"
+    },
+
+    "operations_docs": {
+      "path": "operations",
+      "count": 0,
+      "files": [],
+      "purpose": "Operations and process documentation (to be populated)"
+    },
+
+    "document_templates": {
+      "path": "docs/templates",
+      "count": 0,
+      "files": [],
+      "purpose": "Document templates (directory ready for population)",
+      "note": "Can leverage software-org templates or create startup-specific ones"
+    }
+  },
+
+  "application_modes": {
+    "minimal": {
+      "description": "Only .claude directory for AI collaboration setup",
+      "includes": ["claude_config"],
+      "use_case": "Existing startup project, just adding AI collaboration"
+    },
+    "standard": {
+      "description": ".claude + strategic and engineering docs",
+      "includes": ["claude_config", "root_docs", "strategic_docs", "engineering_docs"],
+      "use_case": "Technical startup focusing on product development"
+    },
+    "complete": {
+      "description": "Everything including fundraising, product, and operations",
+      "includes": ["claude_config", "root_docs", "strategic_docs", "fundraising_docs", "engineering_docs", "product_docs", "operations_docs"],
+      "use_case": "Comprehensive startup framework for fundraising stage"
+    }
+  },
+
+  "features": [
+    "Flat organizational structure",
+    "Lean documentation (50% shorter than enterprise)",
+    "Multi-hat role guidance (founders wear multiple hats)",
+    "Fundraising support (pitch deck, investor updates, cap table)",
+    "Speed-focused workflows",
+    "Startup-specific strategic planning",
+    "Technical foundation (architecture, standards, setup)",
+    "Product development focus",
+    "Ready for role guide generation"
+  ],
+
+  "when_to_use": [
+    "Pre-seed to seed stage startup",
+    "0-10 person team",
+    "Flat organizational structure",
+    "Active fundraising or preparing to raise",
+    "Rapid iteration and pivoting",
+    "Founders wearing multiple hats",
+    "Need lean, essential documentation only"
+  ],
+
+  "graduation_path": {
+    "to": "software-org",
+    "when": "Team grows to 10-15+ people, need hierarchical structure, require formal governance"
+  },
+
+  "changelog": [
+    {
+      "version": "2.0.0",
+      "date": "2026-01-06",
+      "changes": [
+        "Added complete organizational structure",
+        "Added fundraising documentation suite",
+        "Added strategic planning docs",
+        "Added engineering and product documentation",
+        "Added application modes (minimal/standard/complete)",
+        "Enhanced content structure documentation",
+        "Moved from partial to complete template bundle",
+        "Added graduation path to software-org template"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-01-05",
+      "changes": ["Initial release bundled with role-context-manager v1.1.0"]
+    }
+  ]
+}

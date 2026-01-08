@@ -154,48 +154,13 @@ validate_template() {
 # Template Application Functions
 # =============================================================================
 
-# Apply template to current directory
+# Apply template to current directory (backward compatible - uses standard mode)
 apply_template() {
   local template_id="$1"
   local target_dir="${2:-.}" # Default to current directory
 
-  echo "Applying template: $template_id"
-
-  # Get template path
-  local template_path
-  template_path=$(get_template_path "$template_id")
-  if [ $? -ne 0 ]; then
-    return 1
-  fi
-
-  # Validate template
-  if ! validate_template "$template_path"; then
-    echo "Error: Template validation failed" >&2
-    return 1
-  fi
-
-  # Check if .claude already exists
-  if [ -d "$target_dir/.claude" ]; then
-    echo "Warning: .claude directory already exists" >&2
-    echo "Use template-sync agent for updating existing setups" >&2
-    return 1
-  fi
-
-  # Copy .claude directory
-  echo "Copying .claude directory..."
-  if [ ! -d "$template_path/.claude" ]; then
-    echo "Error: Template .claude directory not found" >&2
-    return 1
-  fi
-
-  mkdir -p "$target_dir/.claude"
-  cp -r "$template_path/.claude"/* "$target_dir/.claude/"
-
-  # Record applied template
-  record_applied_template "$template_id" "$target_dir/.claude/preferences.json"
-
-  echo -e "${GREEN}✓${NC} Template applied successfully"
-  return 0
+  # Use the new mode-based function with standard mode for backward compatibility
+  apply_template_with_mode "$template_id" "standard" "$target_dir"
 }
 
 # =============================================================================
@@ -265,7 +230,8 @@ should_auto_update() {
 # Record applied template in preferences
 record_applied_template() {
   local template_id="$1"
-  local prefs_file="$2"
+  local mode="${2:-standard}"  # Application mode
+  local prefs_file="$3"
 
   # Get template version from registry
   local version
@@ -286,18 +252,19 @@ record_applied_template() {
     echo '{}' > "$prefs_file"
   fi
 
-  # Update applied_template object
+  # Update applied_template object with mode
   local temp_file
   temp_file=$(mktemp)
   jq --arg id "$template_id" \
      --arg ver "$version" \
      --arg date "$applied_date" \
-     '.applied_template = {id: $id, version: $ver, applied_date: $date}' \
+     --arg mode "$mode" \
+     '.applied_template = {id: $id, version: $ver, applied_date: $date, mode: $mode}' \
      "$prefs_file" > "$temp_file"
 
   mv "$temp_file" "$prefs_file"
 
-  echo "✓ Recorded template: $template_id v$version"
+  echo "✓ Recorded template: $template_id v$version (mode: $mode)"
   return 0
 }
 
@@ -383,29 +350,241 @@ list_backups() {
 }
 
 # =============================================================================
+# Template Content Discovery Functions
+# =============================================================================
+
+# Get path to specific template content (for agent use)
+get_template_content_reference() {
+  local template_id="$1"
+  local content_type="$2"  # role_guides, document_guides, document_templates, etc.
+
+  if [ -z "$template_id" ] || [ -z "$content_type" ]; then
+    echo "Error: Template ID and content type required" >&2
+    echo "Usage: get_template_content_reference <template-id> <content-type>" >&2
+    return 1
+  fi
+
+  local template_path
+  template_path=$(get_template_path "$template_id")
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  local manifest_path="$template_path/manifest.json"
+  if [ ! -f "$manifest_path" ]; then
+    echo "Error: Manifest not found at $manifest_path" >&2
+    return 1
+  fi
+
+  # Extract content structure path from manifest
+  local content_path
+  content_path=$(jq -r ".content_structure.$content_type.path // empty" "$manifest_path" 2>/dev/null)
+
+  if [ -z "$content_path" ]; then
+    echo "Error: Content type '$content_type' not found in template manifest" >&2
+    return 1
+  fi
+
+  local full_path="$template_path/$content_path"
+  if [ ! -d "$full_path" ] && [ ! -f "$full_path" ]; then
+    echo "Error: Content path does not exist: $full_path" >&2
+    return 1
+  fi
+
+  echo "$full_path"
+  return 0
+}
+
+# List template contents from manifest
+list_template_contents() {
+  local template_id="$1"
+
+  if [ -z "$template_id" ]; then
+    echo "Error: Template ID required" >&2
+    return 1
+  fi
+
+  local manifest
+  manifest=$(get_template_manifest "$template_id")
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  local template_name
+  local template_version
+  template_name=$(echo "$manifest" | jq -r '.name')
+  template_version=$(echo "$manifest" | jq -r '.version')
+
+  echo "Template: $template_name (v$template_version)"
+  echo ""
+  echo "Contents:"
+
+  # Iterate through content_structure
+  echo "$manifest" | jq -r '
+    .content_structure | to_entries[] |
+    "  \(.key):",
+    "    Path: \(.value.path)",
+    "    Purpose: \(.value.purpose)",
+    "    Files: \(.value.count // (.value.files | length) // "N/A")",
+    ""
+  '
+}
+
+# Get template size
+get_template_size() {
+  local template_id="$1"
+
+  if [ -z "$template_id" ]; then
+    echo "Error: Template ID required" >&2
+    return 1
+  fi
+
+  local template_path
+  template_path=$(get_template_path "$template_id")
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  # Get size in KB
+  local size_kb
+  size_kb=$(du -sk "$template_path" | awk '{print $1}')
+
+  # Get file count
+  local file_count
+  file_count=$(find "$template_path" -type f | wc -l)
+
+  echo "Template: $template_id"
+  echo "Size: ${size_kb}KB"
+  echo "Files: $file_count"
+}
+
+# Apply template with specific mode
+apply_template_with_mode() {
+  local template_id="$1"
+  local mode="${2:-standard}"  # minimal, standard, or complete
+  local target_dir="${3:-.}"   # Default to current directory
+
+  echo "Applying template: $template_id (mode: $mode)"
+
+  # Get template path
+  local template_path
+  template_path=$(get_template_path "$template_id")
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  # Validate template
+  if ! validate_template "$template_path"; then
+    echo "Error: Template validation failed" >&2
+    return 1
+  fi
+
+  # Get manifest to determine what to copy
+  local manifest_path="$template_path/manifest.json"
+  if [ ! -f "$manifest_path" ]; then
+    echo "Error: Manifest not found, cannot determine application mode" >&2
+    return 1
+  fi
+
+  # Check if .claude already exists
+  if [ -d "$target_dir/.claude" ]; then
+    echo "Warning: .claude directory already exists" >&2
+    echo "Use template-sync agent for updating existing setups" >&2
+    return 1
+  fi
+
+  # Get includes for this mode
+  local includes
+  includes=$(jq -r ".application_modes.$mode.includes[]" "$manifest_path" 2>/dev/null)
+
+  if [ -z "$includes" ]; then
+    echo "Error: Application mode '$mode' not found in template" >&2
+    echo "Available modes: minimal, standard, complete" >&2
+    return 1
+  fi
+
+  echo "Mode: $mode"
+  echo "Copying content sections: $(echo "$includes" | tr '\n' ' ')"
+  echo ""
+
+  # Copy content based on includes
+  while IFS= read -r section; do
+    local section_path
+    section_path=$(jq -r ".content_structure.$section.path" "$manifest_path" 2>/dev/null)
+
+    if [ -z "$section_path" ] || [ "$section_path" = "null" ]; then
+      echo "Warning: Section '$section' not found in manifest, skipping" >&2
+      continue
+    fi
+
+    local source_path="$template_path/$section_path"
+    local dest_path="$target_dir/$section_path"
+
+    if [ ! -e "$source_path" ]; then
+      echo "Warning: Source path does not exist: $source_path, skipping" >&2
+      continue
+    fi
+
+    echo "Copying $section from $section_path..."
+
+    # Handle special case for root_docs (files in root)
+    if [ "$section" = "root_docs" ]; then
+      # Copy individual files listed in manifest
+      jq -r ".content_structure.root_docs.files[]" "$manifest_path" | while read -r file; do
+        if [ -f "$template_path/$file" ]; then
+          cp "$template_path/$file" "$target_dir/"
+        fi
+      done
+    elif [ -d "$source_path" ]; then
+      # Copy directory
+      mkdir -p "$(dirname "$dest_path")"
+      cp -r "$source_path" "$dest_path"
+    elif [ -f "$source_path" ]; then
+      # Copy file
+      mkdir -p "$(dirname "$dest_path")"
+      cp "$source_path" "$dest_path"
+    fi
+  done <<< "$includes"
+
+  # Record applied template with mode
+  record_applied_template "$template_id" "$mode" "$target_dir/.claude/preferences.json"
+
+  echo -e "${GREEN}✓${NC} Template applied successfully (mode: $mode)"
+  return 0
+}
+
+# =============================================================================
 # Main CLI Interface
 # =============================================================================
 
 # Show usage information
 show_usage() {
   cat <<EOF
-Template Manager - role-context-manager v1.1.0
+Template Manager - role-context-manager v1.3.0
 
 Usage: $0 <command> [arguments]
 
 Commands:
-  list                    List available templates
-  manifest <template-id>  Show template manifest
-  validate <template-id>  Validate template structure
-  apply <template-id>     Apply template to current directory
-  check-version           Check for template updates
-  backup [reason]         Create backup of .claude directory
-  list-backups            List available backups
+  list                              List available templates
+  manifest <template-id>            Show template manifest
+  contents <template-id>            List template contents from manifest
+  validate <template-id>            Validate template structure
+  apply <template-id> [mode]        Apply template (modes: minimal, standard, complete)
+  apply-mode <id> <mode> [dir]      Apply template with specific mode
+  get-content-reference <id> <type> Get path to template content (for agents)
+  size <template-id>                Show template size and file count
+  check-version                     Check for template updates
+  backup [reason]                   Create backup of .claude directory
+  list-backups                      List available backups
 
 Examples:
   $0 list
   $0 manifest software-org
-  $0 apply software-org
+  $0 contents software-org
+  $0 apply software-org standard
+  $0 apply-mode software-org complete /path/to/project
+  $0 get-content-reference software-org document_templates
+  $0 size software-org
   $0 check-version
   $0 backup "before-manual-edit"
 
@@ -428,6 +607,14 @@ main() {
       fi
       get_template_manifest "$2"
       ;;
+    contents)
+      if [ $# -lt 2 ]; then
+        echo "Error: Template ID required" >&2
+        echo "Usage: $0 contents <template-id>" >&2
+        exit 1
+      fi
+      list_template_contents "$2"
+      ;;
     validate)
       if [ $# -lt 2 ]; then
         echo "Error: Template ID required" >&2
@@ -441,10 +628,36 @@ main() {
     apply)
       if [ $# -lt 2 ]; then
         echo "Error: Template ID required" >&2
-        echo "Usage: $0 apply <template-id>" >&2
+        echo "Usage: $0 apply <template-id> [mode]" >&2
         exit 1
       fi
-      apply_template "$2"
+      local mode="${3:-standard}"
+      apply_template_with_mode "$2" "$mode"
+      ;;
+    apply-mode)
+      if [ $# -lt 3 ]; then
+        echo "Error: Template ID and mode required" >&2
+        echo "Usage: $0 apply-mode <template-id> <mode> [target-dir]" >&2
+        exit 1
+      fi
+      local target_dir="${4:-.}"
+      apply_template_with_mode "$2" "$3" "$target_dir"
+      ;;
+    get-content-reference)
+      if [ $# -lt 3 ]; then
+        echo "Error: Template ID and content type required" >&2
+        echo "Usage: $0 get-content-reference <template-id> <content-type>" >&2
+        exit 1
+      fi
+      get_template_content_reference "$2" "$3"
+      ;;
+    size)
+      if [ $# -lt 2 ]; then
+        echo "Error: Template ID required" >&2
+        echo "Usage: $0 size <template-id>" >&2
+        exit 1
+      fi
+      get_template_size "$2"
       ;;
     check-version)
       check_template_version

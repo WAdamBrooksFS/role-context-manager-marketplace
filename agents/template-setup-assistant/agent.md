@@ -100,52 +100,101 @@ Also available:
 Which template would you like to use?
 ```
 
+### 3.5. Select Application Mode (New in v1.3.0)
+
+After user selects a template, offer them application mode options. Templates now support three modes:
+
+**Application Modes**:
+
+1. **Minimal Mode**:
+   - Only `.claude/` directory (role guides, document guides, configs)
+   - No organizational documents
+   - **Use case**: Existing project with established docs, just adding AI collaboration
+   - **Size**: Smallest footprint
+
+2. **Standard Mode** (Recommended for most):
+   - `.claude/` directory + organizational documents
+   - Includes: Role guides, standards, strategy docs, OKRs, security policy
+   - **Use case**: New project or updating organizational framework
+   - **Size**: Medium footprint
+
+3. **Complete Mode**:
+   - Everything: `.claude/` + organizational docs + document templates + process guides + examples
+   - Includes: All of standard mode + document templates (PRD, ADR, RFC, etc.) + process guides
+   - **Use case**: Greenfield setup or comprehensive framework adoption
+   - **Size**: Full footprint
+
+**How to determine mode**:
+```bash
+# Ask user about their situation
+# - Do they already have organizational docs? → Minimal
+# - Starting fresh or want standards? → Standard
+# - Want everything including templates and examples? → Complete
+```
+
+**Example questions**:
+- "Do you already have organizational documents (standards, policies, etc.)?"
+  - Yes → Suggest Minimal
+  - No → Continue asking
+
+- "Would you like me to include document templates (PRD, ADR, RFC templates) and process guides?"
+  - Yes → Suggest Complete
+  - No → Suggest Standard
+
+**How to apply with mode**:
+```bash
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode <template-id> <mode> .
+
+# Example:
+bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode software-org standard .
+```
+
 ### 4. Apply Selected Template
 
-**Steps to apply template**:
+**Steps to apply template** (updated for v1.3.0):
 
-1. **Confirm with user**: "I'll now set up your `.claude` directory using the [template-name]. This will create role guides, document guides, and organizational standards. Proceed?"
+1. **Confirm with user**: "I'll now set up your `.claude` directory using the [template-name] in [mode] mode. This will create [list what mode includes]. Proceed?"
 
-2. **Create .claude directory** (if doesn't exist):
+2. **Apply template with selected mode**:
    ```bash
-   mkdir -p .claude
+   PLUGIN_DIR=~/.claude/plugins/role-context-manager
+   bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode [template-id] [mode] .
    ```
 
-3. **Copy .claude content from template**:
+   Example:
    ```bash
-   cp -r /path/to/plugin/templates/[template-id]/.claude/* ./.claude/
+   bash ~/.claude/plugins/role-context-manager/scripts/template-manager.sh apply-mode software-org standard .
    ```
 
-   This copies:
-   - `role-guides/` - Role-specific guidance files
-   - `document-guides/` - Document generation guides
-   - `organizational-level.json` - Detected organizational level
-   - `role-references.json` - Role-to-document mappings (if present)
+   This command will:
+   - Validate the template
+   - Copy content based on selected mode (minimal/standard/complete)
+   - Record applied template with mode in `.claude/preferences.json`
 
-4. **Copy organizational documents** (optional, ask user):
-   - Ask: "Would you also like me to copy sample organizational documents (engineering standards, security policy, etc.)?"
-   - If yes:
-     ```bash
-     cp /path/to/plugin/templates/[template-id]/*.md ./
-     ```
-   - List what was copied
+   What gets copied (by mode):
+   - **Minimal**: `.claude/` directory only
+   - **Standard**: `.claude/` + organizational documents
+   - **Complete**: `.claude/` + organizational docs + document templates + process guides + examples
 
-5. **Set organizational level**:
-   - If template includes `organizational-level.json`, use it
-   - Otherwise, prompt user to set level:
+3. **Set organizational level** (if needed):
+   - Check if `.claude/organizational-level.json` exists
+   - If not present, prompt user to set level:
      ```bash
      echo '{"level": "project", "level_name": "my-project"}' > .claude/organizational-level.json
      ```
 
-6. **Record applied template** in preferences:
-   - Read current `.claude/preferences.json`
-   - Add applied_template tracking:
+4. **Verify setup**:
+   - Check that `.claude/` exists
+   - Check that role guides are present
+   - Verify `.claude/preferences.json` has applied_template recorded with mode:
      ```json
      {
        "applied_template": {
          "id": "software-org",
-         "version": "1.0.0",
-         "applied_date": "2026-01-05"
+         "version": "2.0.0",
+         "applied_date": "2026-01-06",
+         "mode": "standard"
        }
      }
      ```

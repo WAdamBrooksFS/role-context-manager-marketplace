@@ -37,6 +37,28 @@ ls .claude/role-guides/
 # Specialized roles: Security Engineer, Data Engineer, Cloud Architect
 ```
 
+**Access template role guides as reference** (New in v1.3.0):
+```bash
+# Get the applied template ID
+TEMPLATE_ID=$(jq -r '.applied_template.id // "software-org"' .claude/preferences.json)
+
+# Get path to template role guides
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+ROLE_GUIDES_PATH=$(bash $PLUGIN_DIR/scripts/template-manager.sh \
+  get-content-reference $TEMPLATE_ID claude_config)
+
+# List available reference role guides
+ls $ROLE_GUIDES_PATH/role-guides/
+
+# Read a reference guide
+cat $ROLE_GUIDES_PATH/role-guides/cto-vp-engineering-guide.md
+```
+
+Use template role guides as:
+- **Structure examples**: How to organize sections
+- **Content inspiration**: What to include for similar roles
+- **Quality bar**: Level of detail and comprehensiveness expected
+
 ### 2. Determine Organizational Level
 
 **Roles by level**:

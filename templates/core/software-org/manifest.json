@@ -1,0 +1,163 @@
+{
+  "id": "software-org",
+  "name": "Full Software Organization",
+  "version": "2.0.0",
+  "description": "Complete framework for established software companies with comprehensive role guides, document guides, organizational standards, document templates, and hierarchical examples",
+  "org_levels": ["company", "system", "product", "project"],
+  "target_audience": "Established software companies with 50+ people, multiple teams, and formal processes",
+
+  "roles": [
+    "cto-vp-engineering",
+    "ciso",
+    "cloud-architect",
+    "cpo-vp-product",
+    "director-qa",
+    "product-manager"
+  ],
+
+  "content_structure": {
+    "root_docs": {
+      "path": ".",
+      "files": [
+        "CLAUDE.md",
+        "FRAMEWORK-SUMMARY.md",
+        "README.md",
+        "agile-practices.md",
+        "data-governance.md",
+        "engineering-standards.md",
+        "infrastructure-standards.md",
+        "objectives-and-key-results.md",
+        "product-vision.md",
+        "quality-standards.md",
+        "roadmap.md",
+        "roles-and-responsibilities.md",
+        "security-policy.md",
+        "strategy.md"
+      ],
+      "purpose": "Company-level organizational documents"
+    },
+
+    "claude_config": {
+      "path": ".claude",
+      "role_guides": {
+        "path": ".claude/role-guides",
+        "count": 6,
+        "files": [
+          "cto-vp-engineering-guide.md",
+          "ciso-guide.md",
+          "cloud-architect-guide.md",
+          "cpo-vp-product-guide.md",
+          "director-qa-guide.md",
+          "product-manager-guide.md"
+        ],
+        "purpose": "Role-specific AI collaboration guides"
+      },
+      "document_guides": {
+        "path": ".claude/document-guides",
+        "count": 3,
+        "files": [
+          "architecture-decision-record-guide.md",
+          "objectives-and-key-results-guide.md",
+          "product-requirements-document-guide.md"
+        ],
+        "purpose": "Document generation workflow guides"
+      },
+      "config_files": {
+        "organizational-level.json": "Organizational level configuration",
+        "role-references.json": "Role-to-document mappings"
+      }
+    },
+
+    "document_templates": {
+      "path": "docs/templates",
+      "count": 8,
+      "files": [
+        "architecture-decision-record-template.md",
+        "operational-runbook-template.md",
+        "post-mortem-template.md",
+        "product-requirements-document-template.md",
+        "request-for-comments-template.md",
+        "technical-design-document-template.md",
+        "test-plan-template.md",
+        "user-story-template.md"
+      ],
+      "purpose": "Reusable document templates for common document types"
+    },
+
+    "process_guides": {
+      "path": "docs/processes",
+      "count": 1,
+      "files": [
+        "incident-response.md"
+      ],
+      "purpose": "Process and standards documentation"
+    },
+
+    "hierarchical_examples": {
+      "path": "system-template",
+      "count": 1,
+      "description": "Complete 4-tier hierarchy example (system/product/project structure)",
+      "purpose": "Demonstrates organizational hierarchy patterns"
+    }
+  },
+
+  "application_modes": {
+    "minimal": {
+      "description": "Only .claude directory (role guides, document guides, config)",
+      "includes": ["claude_config"],
+      "use_case": "Existing project with established docs, just adding AI collaboration"
+    },
+    "standard": {
+      "description": ".claude + organizational documents",
+      "includes": ["claude_config", "root_docs"],
+      "use_case": "New project or updating organizational framework"
+    },
+    "complete": {
+      "description": "Everything including document templates, process guides, and examples",
+      "includes": ["claude_config", "root_docs", "document_templates", "process_guides", "hierarchical_examples"],
+      "use_case": "Greenfield setup or comprehensive framework adoption"
+    }
+  },
+
+  "features": [
+    "Hierarchical organization (company/system/product/project)",
+    "Comprehensive role guides for 6+ roles",
+    "Document generation guides for common document types",
+    "8 reusable document templates (PRD, ADR, RFC, TDD, etc.)",
+    "Enterprise-grade standards and policies",
+    "Multi-level OKRs and roadmaps",
+    "Security and data governance",
+    "Quality and engineering standards",
+    "Process guides (incident response)",
+    "Complete hierarchical structure examples"
+  ],
+
+  "when_to_use": [
+    "Company with 50+ employees",
+    "Multiple systems, products, or business units",
+    "Need for formal processes and governance",
+    "SOC2, compliance, or enterprise customer requirements",
+    "Management layers (Directors, VPs, executives)",
+    "Established engineering practices"
+  ],
+
+  "changelog": [
+    {
+      "version": "2.0.0",
+      "date": "2026-01-06",
+      "changes": [
+        "Added complete document templates (8 types)",
+        "Added process guides",
+        "Added hierarchical structure examples",
+        "Added application modes (minimal/standard/complete)",
+        "Enhanced content structure documentation",
+        "Moved from partial to complete template bundle"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-01-05",
+      "changes": ["Initial release bundled with role-context-manager v1.1.0"]
+    }
+  ]
+}

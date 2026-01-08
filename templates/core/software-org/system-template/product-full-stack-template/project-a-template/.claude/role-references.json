@@ -1,0 +1,32 @@
+{
+  "software-engineer": {
+    "default_documents": [
+      "docs/requests-for-comments/*.md",
+      "docs/architecture-decision-records/*.md",
+      "docs/technical-design-document.md",
+      "docs/api-documentation.md",
+      "/engineering-standards.md",
+      "/quality-standards.md",
+      "/security-policy.md",
+      "contributing.md",
+      "development-setup.md",
+      "/docs/templates/request-for-comments-template.md",
+      "/docs/templates/architecture-decision-record-template.md",
+      "/docs/templates/technical-design-document-template.md"
+    ],
+    "user_customizations": []
+  },
+  "sdet": {
+    "default_documents": [
+      "docs/test-plans/*.md",
+      "/engineering-standards.md",
+      "/quality-standards.md",
+      "/security-policy.md",
+      "contributing.md",
+      "development-setup.md",
+      "/docs/templates/test-plan-template.md",
+      "/docs/templates/user-story-template.md"
+    ],
+    "user_customizations": []
+  }
+}

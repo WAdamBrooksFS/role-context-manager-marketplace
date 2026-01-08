@@ -16,16 +16,28 @@ This plugin helps teams organize and load documentation based on roles within an
 - **Smart level detection**: Automatically detects organizational level or prompts when ambiguous
 - **Integration with role guides**: Reads document references from existing role-guide files
 
-### New in v1.1.0: Templates & Intelligent Agents
+### New in v1.3.0: Complete Template Bundles & Application Modes
+- **Complete Templates**: Full organizational frameworks bundled with the plugin
+  - **Software Organization** (748KB): Document templates, process guides, hierarchical examples
+  - **Startup Organization** (260KB): Fundraising docs, strategic planning, lean workflows
+- **Application Modes**: Choose how much to install
+  - **Minimal**: Just .claude/ directory for AI collaboration
+  - **Standard**: .claude/ + organizational documents (recommended)
+  - **Complete**: Everything including document templates and examples
+- **Template Content Discovery**: Agents can access bundled templates
+  - Document generator uses bundled templates (PRD, ADR, RFC, etc.)
+  - Role guide generator references example guides
+  - Template setup assistant offers mode selection
+- **Enhanced Manifests**: Detailed content structure and inventory
+- **No External Dependencies**: Everything users need is in the plugin
+
+### Templates & Intelligent Agents (v1.1.0+)
 - **Template Discovery**: Initialize organizational frameworks from bundled templates
 - **Intelligent Setup Assistant**: AI guides you through template selection based on your context
 - **Document Generation**: Generate organizational documents from templates with role-aware content
 - **Custom Role Guides**: Create new role guides following your organization's patterns
 - **Setup Validation**: Comprehensive checks with automated fixes for configuration issues
 - **Auto-Update Templates**: Keep organizational standards synchronized across teams
-- **Bundled Templates**:
-  - **Software Organization** - Full framework for established companies (50+ people)
-  - **Startup Organization** - Lean framework for early-stage startups (0-10 people)
 
 ## Installation
 
