@@ -41,11 +41,16 @@ This plugin helps teams organize and load documentation based on roles within an
 
 ## Installation
 
-### From Claude Code Marketplace
+### From GitHub
+
+Install directly from this repository:
 
 ```bash
-# Install the plugin
-claude-code plugin install role-context-manager
+# Using HTTPS
+claude-code plugin install https://github.com/WAdamBrooksFS/role-context-manager-marketplace
+
+# Or using SSH
+claude-code plugin install git@github.com:WAdamBrooksFS/role-context-manager-marketplace.git
 ```
 
 ### Manual Installation
