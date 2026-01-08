@@ -4,7 +4,28 @@ Configure SessionStart hook for role-context-manager plugin.
 
 ## Purpose
 
-This command is used once after plugin installation to configure the SessionStart hook in project settings. It ensures that the plugin's validation and template sync checks run automatically when you start a new Claude Code session.
+This command is used once after plugin installation to configure the SessionStart hook in settings (global or project). It ensures that the plugin's validation and template sync checks run automatically when you start a new Claude Code session. Can be configured at global level (~/.claude/settings.json) or project level (./.claude/settings.json).
+
+## Arguments
+
+- `--global`: Configure hook in global settings (~/.claude/settings.json)
+- `--project`: Configure hook in project settings (./.claude/settings.json)
+- `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
+
+## Scope Behavior
+
+### Auto (default)
+- If in project with `.claude/`: Configure project-level hook
+- Otherwise: Configure global-level hook
+
+### Global (`--global`)
+- Configure hook in `~/.claude/settings.json`
+- Works across all projects unless project has its own hook
+
+### Project (`--project`)
+- Configure hook in `./.claude/settings.json`
+- Only affects current project
+- Overrides global hook if both exist
 
 ## When to Use
 
@@ -16,33 +37,51 @@ This command is used once after plugin installation to configure the SessionStar
 
 When this command is executed:
 
-### Step 1: Check Current Configuration
+### Step 1: Determine Scope
 
-1. Check if hook is already configured:
-   - Read `.claude/settings.json` (or `.claude/settings.local.json` if it exists)
+1. Parse scope arguments:
+   - Extract scope flags (--global, --project, --scope)
+   - Determine scope value:
+     - If `--global` present: scope = "global" (configure in ~/.claude/)
+     - If `--project` present: scope = "project" (configure in ./.claude/)
+     - If `--scope <value>` present: scope = value
+     - Otherwise: scope = "auto" (project if in project context, else global)
+
+2. Determine target settings file:
+   - Global scope: `~/.claude/settings.json`
+   - Project scope: `./.claude/settings.json`
+
+### Step 2: Check Current Configuration
+
+1. Check if hook is already configured in target scope:
+   - Read appropriate `settings.json` (or `settings.local.json` if it exists)
    - Look for `hooks.SessionStart` array
    - Check if it includes `/validate-setup --quiet` and `/sync-template --check-only`
 
-2. Check for marker file: `.claude/.role-context-manager-setup-complete`
+2. Check for marker file in appropriate location:
+   - Global: `~/.claude/.role-context-manager-setup-complete`
+   - Project: `./.claude/.role-context-manager-setup-complete`
 
-### Step 2: Configure Hook if Needed
+### Step 3: Configure Hook if Needed
 
 If not already configured:
 
-1. Run the post-install script:
+1. Run the post-install script with scope:
    ```bash
-   bash scripts/post-install.sh
+   SCOPE=[scope] bash scripts/post-install.sh
    ```
 
 2. Capture the output and check exit code:
    - Exit code 0: Success
    - Exit code 1: Failed (jq not installed or other error)
 
-### Step 3: Display Result
+### Step 4: Display Result
 
 **If already configured:**
 ```
-SessionStart hook is already set up.
+SessionStart hook is already set up ([scope] scope).
+
+Location: [~/.claude/settings.json OR ./.claude/settings.json]
 
 Current configuration:
   - /validate-setup --quiet (validates .claude directory)
@@ -53,7 +92,9 @@ No action needed. The hook will run on your next session start.
 
 **If newly configured:**
 ```
-✓ SessionStart hook configured successfully!
+✓ SessionStart hook configured successfully! ([scope] scope)
+
+Location: [~/.claude/settings.json OR ./.claude/settings.json]
 
 The following commands will now run when you start a Claude Code session:
   1. /validate-setup --quiet - Validates .claude directory setup
@@ -84,9 +125,13 @@ Please configure manually by adding the following to .claude/settings.json:
 
 If the automatic script fails, you can manually add the hook configuration:
 
-1. **Open or create** `.claude/settings.json` in your project root
+1. **Choose target file**:
+   - Global: `~/.claude/settings.json` (affects all projects)
+   - Project: `./.claude/settings.json` (affects only this project)
 
-2. **Add the hooks configuration**:
+2. **Open or create** the target settings file
+
+3. **Add the hooks configuration**:
    ```json
    {
      "hooks": {
@@ -98,7 +143,7 @@ If the automatic script fails, you can manually add the hook configuration:
    }
    ```
 
-3. **If settings.json already has content**, merge the hooks section carefully:
+4. **If settings.json already has content**, merge the hooks section carefully:
    ```json
    {
      "existing": "configuration",
@@ -111,7 +156,21 @@ If the automatic script fails, you can manually add the hook configuration:
    }
    ```
 
-4. **Save the file** and restart Claude Code
+5. **Save the file** and restart Claude Code
+
+## Global vs Project Hooks
+
+**Global hooks** (`~/.claude/settings.json`):
+- Run for all projects
+- Convenient default for consistent behavior
+- Can be overridden by project-specific hooks
+
+**Project hooks** (`./.claude/settings.json`):
+- Run only in this project
+- Override global hooks when present
+- Useful for project-specific validation needs
+
+**Recommendation**: Use global hooks for personal preferences, project hooks for team standards.
 
 ## Troubleshooting
 

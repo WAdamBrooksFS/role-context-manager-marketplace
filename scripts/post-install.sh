@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
 # post-install.sh - Configure SessionStart hook for role-context-manager
-# Part of role-context-manager v1.2.0
+# Part of role-context-manager v1.3.0
 #
-# This script automatically configures the SessionStart hook in project settings
-# when the plugin is first used. It ensures the hook is added to .claude/settings.json
+# This script automatically configures the SessionStart hook in settings
+# when the plugin is first used. It ensures the hook is added to settings.json
 # so that validation and template sync checks run on every session start.
+#
+# Supports multi-scope configuration:
+#   SCOPE=global - Configure in ~/.claude/settings.json
+#   SCOPE=project - Configure in ./.claude/settings.json
+#   SCOPE=auto (default) - Configure in project if exists, else global
 #
 # Exit codes:
 #   0 - Success
@@ -13,22 +18,66 @@
 
 set -euo pipefail
 
+# Get scope from environment variable (default: auto)
+SCOPE="${SCOPE:-auto}"
+
+# Function to check if we're in a project context
+is_project_context() {
+    [[ -d ".claude" ]] || [[ -d "./.claude" ]]
+}
+
+# Determine target directory based on scope
+determine_target_dir() {
+    case "$SCOPE" in
+        global)
+            echo "$HOME/.claude"
+            ;;
+        project)
+            if ! is_project_context; then
+                echo "Error: Not in a project context. Cannot use --project scope." >&2
+                exit 1
+            fi
+            echo ".claude"
+            ;;
+        auto)
+            if is_project_context; then
+                echo ".claude"
+            else
+                echo "$HOME/.claude"
+            fi
+            ;;
+        *)
+            echo "Error: Invalid scope '$SCOPE'. Use: global, project, or auto" >&2
+            exit 1
+            ;;
+    esac
+}
+
 # Determine project root and settings location
 PROJECT_ROOT="${PWD}"
-CLAUDE_DIR=".claude"
+CLAUDE_DIR="$(determine_target_dir)"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 MARKER_FILE="$CLAUDE_DIR/.role-context-manager-setup-complete"
 
+# Determine actual scope for display
+if [[ "$CLAUDE_DIR" == "$HOME/.claude" ]]; then
+    ACTUAL_SCOPE="global"
+    SCOPE_DISPLAY="Global (~/.claude/)"
+else
+    ACTUAL_SCOPE="project"
+    SCOPE_DISPLAY="Project (./.claude/)"
+fi
+
 # Check if already set up
 if [[ -f "$MARKER_FILE" ]]; then
-    echo "SessionStart hook already configured."
+    echo "SessionStart hook already configured ($SCOPE_DISPLAY)."
     exit 0
 fi
 
 # Ensure .claude directory exists
 if [[ ! -d "$CLAUDE_DIR" ]]; then
     mkdir -p "$CLAUDE_DIR"
-    echo "Created $CLAUDE_DIR directory"
+    echo "Created $SCOPE_DISPLAY directory"
 fi
 
 # Check if settings file exists, create if needed
@@ -50,13 +99,24 @@ if command -v jq &>/dev/null; then
 
     mv "$temp_file" "$SETTINGS_FILE"
 
-    echo "✓ SessionStart hook configured"
+    echo "✓ SessionStart hook configured ($SCOPE_DISPLAY)"
     touch "$MARKER_FILE"
 
     echo ""
-    echo "Configuration complete! The following commands will run on session start:"
+    echo "Configuration complete!"
+    echo "Scope: $SCOPE_DISPLAY"
+    echo "Settings file: $SETTINGS_FILE"
+    echo ""
+    echo "The following commands will run on session start:"
     echo "  1. /validate-setup --quiet - Validates .claude directory setup"
     echo "  2. /sync-template --check-only - Checks for template updates"
+    echo ""
+
+    if [[ "$ACTUAL_SCOPE" == "global" ]]; then
+        echo "This hook will run for all projects unless overridden by project-specific hooks."
+    else
+        echo "This hook will run for this project only."
+    fi
     echo ""
     echo "Restart Claude Code or start a new session to activate the hook."
 else

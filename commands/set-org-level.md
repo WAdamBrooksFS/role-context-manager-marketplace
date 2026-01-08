@@ -15,6 +15,9 @@ Set or override the organizational level for the current directory.
 - `system`: Set to system level
 - `product`: Set to product level
 - `project`: Set to project level
+- `--global`: Apply to global config (~/.claude/)
+- `--project-scope`: Apply to project config (./.claude/)
+- `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
 
 ## What This Command Does
 
@@ -92,7 +95,15 @@ Set or override the organizational level for the current directory.
 
 When this command is executed:
 
-1. Parse the level argument (if provided)
+1. Parse arguments:
+   - Level argument (company, system, product, project)
+   - Scope flags (--global, --project-scope, --scope)
+
+2. Determine scope value:
+   - If `--global` present: scope = "global"
+   - If `--project-scope` present: scope = "project"
+   - If `--scope <value>` present: scope = value
+   - Otherwise: scope = "auto" (default)
 
 2. **Check if .claude directory exists**:
    ```bash
@@ -112,13 +123,13 @@ When this command is executed:
    - If user agrees, invoke template-setup-assistant agent
    - After template setup, proceed with setting level
 
-4. **If .claude exists**, call the level-detector.sh script:
+4. **If .claude exists**, call the level-detector.sh script with scope:
    ```bash
    # Show current level
-   bash ~/.claude/plugins/role-context-manager/scripts/level-detector.sh
+   SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/level-detector.sh
 
-   # Set level explicitly
-   # Create or update .claude/organizational-level.json
+   # Set level explicitly with scope
+   # Create or update appropriate organizational-level.json (global or project)
    ```
 
 5. If no argument (show mode):

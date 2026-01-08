@@ -17,11 +17,13 @@ Display your current role and the documents that will load in Claude Code sessio
 
 ## What This Command Does
 
-1. Displays your current organizational level
-2. Shows your current role
-3. Lists all documents that will load on next session
-4. Shows existence status for each document (exists, missing, can be generated)
-5. Displays any custom additions or removals
+1. Displays configuration hierarchy (global and project configs)
+2. Shows your current organizational level
+3. Shows your current role (from both global and project if applicable)
+4. Lists all documents that will load on next session
+5. Shows existence status for each document (exists, missing, can be generated)
+6. Displays any custom additions or removals
+7. Shows effective configuration (what will actually be used in current context)
 
 ## Usage Examples
 
@@ -66,12 +68,17 @@ Call the role-manager.sh script with the show-role-context command:
    ```
 
 **4. The script will (standard mode)**:
-   - Detect the organizational level
-   - Read current role from `.claude/preferences.json`
+   - Check if both global (~/.claude/) and project (./.claude/) configs exist
+   - Display configuration hierarchy showing:
+     * Global config (if exists): role, organizational level, documents
+     * Project config (if exists): role, organizational level, documents, and what overrides global
+   - Show effective configuration (what will be used in current context)
+   - Detect the organizational level (project overrides global)
+   - Read current role from both configs (project overrides global)
    - Merge team defaults from `.claude/role-references.json`
    - Apply user overrides from `.claude/role-references.local.json`
    - Check existence of each document
-   - Display formatted output
+   - Display formatted output with hierarchy
 
 **5. If no role is set (standard mode)**, display available roles and prompt to use `/set-role`
 
@@ -88,11 +95,58 @@ Call the role-manager.sh script with the show-role-context command:
 
 ## Example Output
 
-### When Role is Set
+### When Both Global and Project Configs Exist
 
 ```
-Organizational level: project
-Current role: software-engineer
+Configuration Hierarchy:
+
+  Global config: ~/.claude/
+    Role: software-engineer
+    Org level: project
+    Docs: /engineering-standards.md, /quality-standards.md
+
+  Project config: /home/user/my-project/.claude/
+    Role: qa-engineer (overrides global)
+    Org level: project
+    Docs: +test-plan.md, -/quality-standards.md
+
+─────────────────────────────────────────────────────
+
+Effective Configuration (in current directory):
+  Role: qa-engineer
+  Organizational level: project
+
+Documents that will load on next session:
+
+  ✓ /engineering-standards.md (from global)
+  ✓ test-plan.md (added in project)
+  - /quality-standards.md (removed in project)
+
+Legend: ✓ exists | ! missing | ? can be generated
+
+💡 Tip: Use /set-role --global to change global role
+💡 Tip: Use /set-role --project to change project role
+
+Start a new session to load this context.
+```
+
+### When Only Global Config Exists
+
+```
+Configuration Hierarchy:
+
+  Global config: ~/.claude/
+    Role: software-engineer
+    Org level: project
+    Docs: /engineering-standards.md, /quality-standards.md, /security-policy.md
+
+  Project config: none
+
+─────────────────────────────────────────────────────
+
+Effective Configuration (in current directory):
+  Role: software-engineer (from global)
+  Organizational level: project
 
 Documents that will load on next session:
 
@@ -108,6 +162,36 @@ Legend: ✓ exists | ! missing | ? can be generated
 
 💡 Tip: Use /generate-document to create missing documents
     Example: /generate-document development-setup
+
+Start a new session to load this context.
+```
+
+### When Only Project Config Exists
+
+```
+Configuration Hierarchy:
+
+  Global config: none
+
+  Project config: /home/user/my-project/.claude/
+    Role: software-engineer
+    Org level: project
+    Docs: /engineering-standards.md, /quality-standards.md
+
+─────────────────────────────────────────────────────
+
+Effective Configuration (in current directory):
+  Role: software-engineer
+  Organizational level: project
+
+Documents that will load on next session:
+
+  ✓ /engineering-standards.md
+  ✓ /quality-standards.md
+  ✓ /security-policy.md
+  ✓ contributing.md
+
+Legend: ✓ exists | ! missing | ? can be generated
 
 Start a new session to load this context.
 ```

@@ -16,7 +16,14 @@ This plugin helps teams organize and load documentation based on roles within an
 - **Smart level detection**: Automatically detects organizational level or prompts when ambiguous
 - **Integration with role guides**: Reads document references from existing role-guide files
 
-### New in v1.3.0: Complete Template Bundles & Application Modes
+### New in v1.3.0: Complete Template Bundles & Multi-Scope Configuration
+- **Multi-Scope Configuration**: Global and project-level configuration support
+  - **Global scope** (~/.claude/): Personal defaults that apply everywhere
+  - **Project scope** (./.claude/): Project-specific settings that override global
+  - **Auto mode**: Intelligently chooses project or global based on context
+  - **Configuration hierarchy**: Project > Global > Plugin Defaults
+  - Works when installed globally (`local-user`) or per-project
+  - See [SCOPES.md](SCOPES.md) for detailed documentation
 - **Complete Templates**: Full organizational frameworks bundled with the plugin
   - **Software Organization** (748KB): Document templates, process guides, hierarchical examples
   - **Startup Organization** (260KB): Fundraising docs, strategic planning, lean workflows
@@ -41,6 +48,22 @@ This plugin helps teams organize and load documentation based on roles within an
 
 ## Installation
 
+### Installation Scopes (New in v1.3.0)
+
+The plugin now supports two installation scopes:
+
+**Global Installation** (Recommended for individuals):
+- Plugin installed once for your user account
+- Config stored in `~/.claude/`
+- Works across all projects
+- Personal defaults with project overrides
+
+**Project Installation** (For teams):
+- Plugin installed in specific project
+- Config stored in project's `.claude/`
+- Team-wide standards
+- Committed to git for consistency
+
 ### Step 1: Add the marketplace
 
 First, add this repository as a marketplace source:
@@ -51,10 +74,15 @@ claude plugin marketplace add https://github.com/WAdamBrooksFS/role-context-mana
 
 ### Step 2: Install the plugin
 
-Then install the plugin from the marketplace:
-
+**Global installation** (recommended):
 ```bash
 claude plugin install role-context-manager
+```
+
+**Project installation** (for teams):
+```bash
+cd your-project
+claude plugin install role-context-manager --scope project
 ```
 
 ### Manual Installation
@@ -163,12 +191,54 @@ If hooks aren't running automatically:
 
 ## Quick Start
 
+### Choose Your Configuration Approach
+
+**Option 1: Global Defaults (Recommended for individuals)**
+```bash
+# Initialize global template
+/init-org-template --global
+
+# Set your default role
+/set-role software-engineer --global
+
+# Works everywhere, override in projects as needed
+```
+
+**Option 2: Project-Specific (Recommended for teams)**
+```bash
+cd your-project
+
+# Initialize project template
+/init-org-template --project
+
+# Set project role
+/set-role qa-engineer --project
+
+# Commit .claude/ to git for team
+```
+
+**Option 3: Hybrid (Best of both worlds)**
+```bash
+# Set global defaults
+/init-org-template --global
+/set-role software-engineer --global
+
+# Override in specific projects
+cd special-project
+/set-role devops-engineer --project
+```
+
+See [SCOPES.md](SCOPES.md) for detailed guidance on choosing the right approach.
+
 ### For New Users (v1.1.0+): Initialize from Template
 
 If you don't have a `.claude` directory yet, start with a template:
 
 ```bash
-/init-org-template
+/init-org-template        # Auto-detects scope
+# or
+/init-org-template --global   # For global config
+/init-org-template --project  # For project config
 ```
 
 The setup assistant will:
@@ -237,46 +307,61 @@ Add and remove multiple at once:
 
 ## Commands Reference
 
-### `/set-role [role-name]`
+All commands support scope parameters (new in v1.3.0):
+- `--global`: Apply to global config (~/.claude/)
+- `--project`: Apply to project config (./.claude/)
+- `--scope <auto|global|project>`: Explicitly specify scope
+- No flag: Auto-detects (project if exists, else global)
+
+### `/set-role [role-name] [--global|--project]`
 
 **Purpose**: Set your current role
 
 **Usage**:
-- `/set-role software-engineer`
-- `/set-role product-manager`
-- `/set-role devops-engineer`
+- `/set-role software-engineer` - Auto-detects scope
+- `/set-role software-engineer --global` - Set global default
+- `/set-role qa-engineer --project` - Set project role
+- `/set-role product-manager --scope global` - Explicit scope
 
 **What it does**:
 1. Validates role exists at current organizational level
-2. Updates `.claude/preferences.json`
+2. Updates appropriate `preferences.json` (global or project)
 3. Initializes role-specific document references from role guide
 4. Displays what will load on next session
+5. Shows which scope was updated
 
 ### `/show-role-context`
 
 **Purpose**: Display current role and document loading status
 
 **Usage**:
-- `/show-role-context`
+- `/show-role-context` - Shows configuration hierarchy
 
-**What it shows**:
+**What it shows** (v1.3.0+):
+- **Configuration Hierarchy**: Both global and project configs (if they exist)
+- **Global config**: Your personal defaults from ~/.claude/
+- **Project config**: Project-specific settings from ./.claude/
+- **Effective Configuration**: What actually applies in current directory
 - Current organizational level
-- Current role
+- Current role (showing which scope it comes from)
 - Documents that will load (with ✓ exists, ! missing, - excluded)
 - Custom additions and removals
+- Source indicators (from global vs from project)
 
-### `/update-role-docs [+/-]file ...`
+### `/update-role-docs [+/-]file ... [--global|--project]`
 
 **Purpose**: Customize which documents load for your role
 
 **Usage**:
-- `/update-role-docs +path/to/doc.md` - Add a document
-- `/update-role-docs -/quality-standards.md` - Remove a document
+- `/update-role-docs +path/to/doc.md` - Add a document (auto scope)
+- `/update-role-docs +doc.md --global` - Add to global config
+- `/update-role-docs -/quality-standards.md --project` - Remove from project
 - `/update-role-docs +new.md -old.md` - Multiple changes
 
 **Supports**:
 - Relative paths (relative to current directory)
 - Absolute paths (from repository root, start with `/`)
+- Scope parameters to target global or project config
 - Multiple modifications in one command
 
 ### `/init-role-docs [--reset]`
@@ -310,7 +395,29 @@ Add and remove multiple at once:
 
 ## Configuration Files
 
-### Created in Your Project
+### File Locations (v1.3.0+)
+
+Configuration files can exist in two locations:
+
+**Global Config** (~/.claude/):
+- `preferences.json` - Your global role and settings
+- `role-references.json` - Global default document references
+- `role-references.local.json` - Your global document customizations
+- `settings.json` - Global hook configuration
+- `role-guides/` - Available role definitions
+- `.role-context-manager-setup-complete` - Setup marker
+
+**Project Config** (./.claude/):
+- `preferences.json` - Project role and settings (overrides global)
+- `role-references.json` - Project document references (overrides global)
+- `role-references.local.json` - Your project document customizations
+- `settings.json` - Project hook configuration (overrides global)
+- `role-guides/` - Project-specific role definitions
+- `.role-context-manager-setup-complete` - Setup marker
+
+**Precedence**: Project > Global > Plugin Defaults
+
+### Created in Your Project (Legacy Documentation)
 
 After using the plugin, these files are created in `.claude/`:
 
@@ -445,6 +552,80 @@ When loading documents:
 - **Absolute paths** (start with `/`): Resolved from repository root
 - **Relative paths**: Resolved from current directory upward (first match wins)
 - **Explicit paths**: Users can always specify exact paths
+
+## Multi-Scope Configuration (v1.3.0+)
+
+### Understanding Scopes
+
+The plugin now supports three configuration scopes:
+
+1. **Global** (~/.claude/): Personal defaults for all projects
+2. **Project** (./.claude/): Project-specific overrides
+3. **Auto**: Intelligently chooses based on context
+
+See [SCOPES.md](SCOPES.md) for comprehensive documentation.
+
+### Common Patterns
+
+**Pattern 1: Individual Developer**
+```bash
+# Set global defaults
+/init-org-template --global
+/set-role software-engineer --global
+
+# Works everywhere automatically
+cd any-project
+/show-role-context  # Uses global config
+```
+
+**Pattern 2: Team Project**
+```bash
+cd team-project
+
+# Set team standards
+/init-org-template --project
+/set-role qa-engineer --project
+
+# Commit for team
+git add .claude/
+git commit -m "Add team configuration"
+```
+
+**Pattern 3: Hybrid (Recommended)**
+```bash
+# Global defaults for personal work
+/set-role software-engineer --global
+
+# Override for specific projects
+cd work-project
+/set-role devops-engineer --project
+
+# work-project uses devops-engineer
+# other projects use software-engineer
+```
+
+### Checking Active Configuration
+
+```bash
+/show-role-context
+```
+
+Shows:
+- Global config (if exists)
+- Project config (if exists)
+- Effective configuration (what's actually used)
+- Which scope each setting comes from
+
+### Migration from v1.2.0
+
+Existing project-only setups work without changes. To add global config:
+
+```bash
+/init-org-template --global
+/set-role your-role --global
+```
+
+Now plugin works both in and outside projects.
 
 ## Troubleshooting
 
@@ -604,6 +785,71 @@ MIT License - See LICENSE file for details
 - **Documentation**: https://github.com/WAdamBrooksFS/role-context-manager-marketplace/wiki
 
 ## Changelog
+
+### v1.3.0 (2026-01-08) - Multi-Scope Configuration & Global Installation Support
+
+**Major Features**:
+- **Multi-Scope Configuration**: Plugin now works at global and project levels
+  - **Global scope** (~/.claude/): Personal defaults across all projects
+  - **Project scope** (./.claude/): Project-specific settings that override global
+  - **Auto mode**: Intelligently chooses project or global based on context
+  - **Configuration hierarchy**: Project > Global > Plugin Defaults
+  - Works when installed globally (`local-user`) or per-project
+
+**All Commands Updated with Scope Support**:
+- `/set-role [role] --global|--project|--scope <auto|global|project>`
+- `/init-org-template --global|--project`
+- `/update-role-docs [+/-]files --global|--project`
+- `/init-role-docs --reset --global|--project`
+- `/set-org-level [level] --global|--project`
+- `/validate-setup --global|--project` - Validates both scopes
+- `/sync-template --global|--project` - Syncs both scopes
+- `/show-role-context` - Shows configuration hierarchy
+- `/setup-plugin-hooks --global|--project` - Configures hooks at either scope
+
+**Core Script Enhancements**:
+- `role-manager.sh`: Added multi-scope functions
+  - `find_config_dir()` - Scope-aware config directory resolution
+  - `get_effective_config_dir()` - Hierarchy with fallback
+  - `ensure_global_config()` - Auto-creates global config on first use
+  - `get_preference()` - Reads with global fallback
+  - `set_preference()` - Writes to appropriate scope
+- `post-install.sh`: Updated for multi-scope hook installation
+- Template and validation scripts: Support both scopes
+
+**Hook Improvements**:
+- SessionStart hooks work at both global and project levels
+- Global hooks run for all projects
+- Project hooks override global when both exist
+- Independent marker files per scope
+
+**New Documentation**:
+- `SCOPES.md` - Comprehensive scope configuration guide
+- `docs/MULTI-SCOPE-HOOKS.md` - Multi-scope hook behavior
+- `docs/TEST-PLAN.md` - Comprehensive test plan for multi-scope
+
+**Enhanced Commands**:
+- `/show-role-context` - Now displays configuration hierarchy
+  - Shows global config (if exists)
+  - Shows project config (if exists)
+  - Shows effective configuration (what's actually used)
+  - Indicates source of each setting
+
+**Backward Compatibility**:
+- Existing project-only setups continue to work unchanged
+- No migration required for v1.2.0 users
+- Auto mode provides seamless experience
+
+**Use Cases Enabled**:
+- Personal defaults with project overrides
+- Works outside projects (not just in .claude directories)
+- Team standards with personal customizations
+- Flexible development environments
+
+**Migration Path**:
+- v1.2.0 and earlier: Project-only configuration continues to work
+- Add global config optionally: `/init-org-template --global`
+- Existing projects unaffected, global config adds convenience
 
 ### v1.2.0 (2026-01-05) - SessionStart Hook & Auto-Validation
 **New Features**:

@@ -17,7 +17,7 @@ This command helps users update their organizational templates to newer versions
 ## Usage
 
 ```bash
-# Check for and apply available updates
+# Check for and apply available updates (syncs both global and project)
 /sync-template
 
 # Force check even if recently checked
@@ -31,6 +31,15 @@ This command helps users update their organizational templates to newer versions
 
 # Quiet mode with check-only (minimal output)
 /sync-template --check-only --quiet
+
+# Sync only global config
+/sync-template --global
+
+# Sync only project config
+/sync-template --project
+
+# Sync specific scope
+/sync-template --scope global
 ```
 
 ## Auto-Update Behavior
@@ -67,7 +76,16 @@ When this command is executed, invoke the **template-sync agent** to handle the 
    - Check for `--preview` flag (show changes without applying)
    - Check for `--check-only` flag (check for updates without applying)
    - Check for `--quiet` flag (minimal output)
+   - Check for `--global` flag (sync only global config)
+   - Check for `--project` flag (sync only project config)
+   - Check for `--scope <value>` (sync specific scope)
    - Extract any other parameters
+
+   Determine scope:
+   - If `--global` present: scope = "global" (sync only ~/.claude/)
+   - If `--project` present: scope = "project" (sync only ./.claude/)
+   - If `--scope <value>` present: scope = value
+   - Otherwise: scope = "both" (sync both global and project if they exist)
 
 **SPECIAL MODE: Check-Only (for SessionStart Hook)**
 
@@ -134,7 +152,7 @@ When this command is executed, invoke the **template-sync agent** to handle the 
    Use the Task tool with:
    - subagent_type: 'template-sync'
    - description: 'Sync template updates'
-   - prompt: 'Check for template updates for the user's applied template. Compare current version with registry version. If updates available, analyze differences between current setup and new template version. Categorize changes (safe to apply, merge required, conflicts, user customizations to preserve). Create backup before applying changes. Perform intelligent merge, handle conflicts with user input. Apply updates while preserving customizations. Generate migration report. Update applied_template version in preferences.'
+   - prompt: 'Check for template updates for the user's applied template at [scope] scope (both, global, or project). If scope is "both", sync both ~/.claude/ (global) and ./.claude/ (project) independently. Compare current version with registry version. If updates available, analyze differences between current setup and new template version. Categorize changes (safe to apply, merge required, conflicts, user customizations to preserve). Create backup before applying changes. Perform intelligent merge, handle conflicts with user input. Apply updates while preserving customizations. Generate migration report. Update applied_template version in appropriate preferences file(s). When syncing both scopes, clearly indicate which config is being synced.'
    ```
 
    If `--preview` flag present:
@@ -144,22 +162,28 @@ When this command is executed, invoke the **template-sync agent** to handle the 
    - Add to prompt: 'Force check for updates even if recently checked.'
 
 4. **The agent will**:
-   - Read current template info from `applied_template`
-   - Check registry for latest version
-   - Compare versions (semantic versioning)
-   - If no updates: Notify user and exit
-   - If updates available:
-     - Analyze differences (file-level and content-level)
-     - Detect user customizations
-     - Categorize changes by safety/conflict level
-     - Create timestamped backup
-     - For safe changes: Apply automatically
-     - For merges: Perform intelligent three-way merge
-     - For conflicts: Present options to user
-     - Apply user-selected conflict resolutions
-     - Update `applied_template.version` and `.applied_date`
-     - Generate detailed migration report
-     - Run validation to confirm success
+   - Determine which configs to sync based on scope parameter
+   - For each config (global and/or project):
+     * Read current template info from `applied_template`
+     * Check registry for latest version
+     * Compare versions (semantic versioning)
+     * If no updates: Notify user and continue to next scope (if any)
+     * If updates available:
+       - Analyze differences (file-level and content-level)
+       - Detect user customizations
+       - Categorize changes by safety/conflict level
+       - Create timestamped backup for this scope
+       - For safe changes: Apply automatically
+       - For merges: Perform intelligent three-way merge
+       - For conflicts: Present options to user
+       - Apply user-selected conflict resolutions
+       - Update `applied_template.version` and `.applied_date` in appropriate config
+       - Generate detailed migration report for this scope
+   - If syncing both scopes:
+     * Sync global config first (~/.claude/)
+     * Then sync project config (./.claude/)
+     * Show clear separation between scope sync results
+   - Run validation to confirm success for all synced scopes
 
 5. **After agent completes**:
    - Show sync summary

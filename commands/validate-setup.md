@@ -17,7 +17,7 @@ This command performs comprehensive checks on your `.claude` directory, identifi
 ## Usage
 
 ```bash
-# Run full validation
+# Run full validation (validates both global and project scopes)
 /validate-setup
 
 # Quick validation (essential checks only)
@@ -34,6 +34,15 @@ This command performs comprehensive checks on your `.claude` directory, identifi
 
 # Summary mode (brief checklist of results)
 /validate-setup --summary
+
+# Validate only global config
+/validate-setup --global
+
+# Validate only project config
+/validate-setup --project
+
+# Validate specific scope
+/validate-setup --scope global
 ```
 
 ## Instructions for Claude
@@ -97,14 +106,23 @@ When this command is executed, invoke the **framework-validator agent** to perfo
    - Check for `--silent` flag (no output unless issues found)
    - Check for `--quiet` flag (one-line summary only)
    - Check for `--summary` flag (brief checklist of results)
+   - Check for `--global` flag (validate only global config)
+   - Check for `--project` flag (validate only project config)
+   - Check for `--scope <value>` (validate specific scope)
    - Extract any other parameters
+
+   Determine scope:
+   - If `--global` present: scope = "global" (validate only ~/.claude/)
+   - If `--project` present: scope = "project" (validate only ./.claude/)
+   - If `--scope <value>` present: scope = value
+   - Otherwise: scope = "both" (validate both global and project if they exist)
 
 5. **Invoke the agent**:
    ```
    Use the Task tool with:
    - subagent_type: 'framework-validator'
    - description: 'Validate .claude directory setup'
-   - prompt: 'Perform validation of the .claude directory structure and configuration. Check directory structure, validate JSON files, verify role guides exist and are properly formatted, validate reference integrity, check template tracking, and cross-reference documents. For each issue found, explain what's wrong, why it matters, how to fix it, and the likely root cause. Generate a validation report with appropriate verbosity based on flags provided.'
+   - prompt: 'Perform validation of the .claude directory structure and configuration at [scope] scope (both, global, or project). If scope is "both", validate both ~/.claude/ (global) and ./.claude/ (project) independently and show results for each. Check directory structure, validate JSON files, verify role guides exist and are properly formatted, validate reference integrity, check template tracking, and cross-reference documents. For each issue found, explain what's wrong, why it matters, how to fix it, and the likely root cause. Generate a validation report with appropriate verbosity based on flags provided. When validating both scopes, clearly indicate which config has issues.'
    ```
 
    **Add to prompt based on flags**:
@@ -125,15 +143,23 @@ When this command is executed, invoke the **framework-validator agent** to perfo
    - Add: 'After identifying issues, offer automated fixes for fixable problems. Get user approval before applying fixes.'
 
 6. **The agent will**:
-   - Check directory structure (`.claude/`, `role-guides/`, `document-guides/`)
-   - Validate all JSON configuration files
-   - Verify role guides exist and are populated
-   - Check reference integrity (roles, documents, templates)
-   - Validate cross-references between files
-   - Check template tracking if applied
+   - Determine which configs to validate based on scope parameter
+   - For each config (global and/or project):
+     * Check directory structure (`.claude/`, `role-guides/`, `document-guides/`)
+     * Validate all JSON configuration files
+     * Verify role guides exist and are populated
+     * Check reference integrity (roles, documents, templates)
+     * Validate cross-references between files
+     * Check template tracking if applied
+   - If validating both scopes:
+     * Validate global config (~/.claude/)
+     * Validate project config (./.claude/)
+     * Check configuration hierarchy and overrides
+     * Ensure consistency between scopes
    - Generate validation report (verbosity depends on flags)
    - Categorize issues by severity (Critical, Warning, Info)
    - Explain each issue with context (unless --silent or --quiet)
+   - Indicate which scope has issues (global vs project)
    - Offer automated fixes where possible (if --fix flag present)
 
 7. **After agent completes**:

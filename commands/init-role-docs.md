@@ -12,6 +12,9 @@ Initialize or reset your role's document references to defaults from the role gu
 
 - No arguments: Initialize document references if not set (preserves existing customizations)
 - `--reset`: Reset to defaults, clearing all user customizations
+- `--global`: Apply to global config (~/.claude/)
+- `--project`: Apply to project config (./.claude/)
+- `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
 
 ## What This Command Does
 
@@ -47,31 +50,40 @@ Initialize or reset your role's document references to defaults from the role gu
 
 When this command is executed:
 
-1. Determine if --reset flag is present
+1. Parse arguments to extract:
+   - Reset flag (--reset)
+   - Scope flags (--global, --project, --scope)
 
-2. Call the role-manager.sh script with the init-role-docs command:
+2. Determine scope value:
+   - If `--global` present: scope = "global"
+   - If `--project` present: scope = "project"
+   - If `--scope <value>` present: scope = value
+   - Otherwise: scope = "auto" (default)
+
+3. Call the role-manager.sh script with scope and flags:
    ```bash
    # Without reset
-   bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh init-role-docs
+   SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh init-role-docs
 
    # With reset
-   bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh init-role-docs --reset
+   SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh init-role-docs --reset
    ```
 
-3. The script will:
-   - Read current role from `.claude/preferences.json`
-   - Find role guide at `.claude/role-guides/[role]-guide.md`
+4. The script will:
+   - Use scope to determine config directory
+   - Read current role from appropriate `preferences.json`
+   - Find role guide at appropriate `.claude/role-guides/[role]-guide.md`
    - Parse the "Document References" section
    - Extract all markdown file references
-   - Update `.claude/role-references.json` with defaults
-   - If --reset, clear `.claude/role-references.local.json` customizations
-   - Display success message
+   - Update appropriate `role-references.json` with defaults
+   - If --reset, clear appropriate `role-references.local.json` customizations
+   - Display which config was updated and success message
 
-4. If no role is set, display error and prompt to use `/set-role` first
+5. If no role is set, display error and prompt to use `/set-role` first
 
-5. If role guide is not found, display error with available roles
+6. If role guide is not found, display error with available roles
 
-6. After initialization, automatically show context with `/show-role-context`
+7. After initialization, automatically show context with `/show-role-context`
 
 ## Role Guide Format
 

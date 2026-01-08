@@ -11,6 +11,26 @@ Set your current role to determine which documents load for context in Claude Co
 ## Arguments
 
 - `role-name`: The role to set (e.g., software-engineer, product-manager, devops-engineer)
+- `--global`: Force setting role in global config (~/.claude/)
+- `--project`: Force setting role in project config (./.claude/)
+- `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
+
+## Behavior by Scope
+
+### Auto (default)
+- If in project with `.claude/`: Update project config
+- Otherwise: Update global config in `~/.claude/`
+- This allows the plugin to work both globally and at project level
+
+### Global (`--global`)
+- Always update `~/.claude/preferences.json`
+- Works from any directory
+- Useful for setting default role across all projects
+
+### Project (`--project`)
+- Update project's `.claude/preferences.json`
+- Error if not in a project context
+- Useful for project-specific role overrides
 
 ## What This Command Does
 
@@ -22,8 +42,17 @@ Set your current role to determine which documents load for context in Claude Co
 ## Usage Examples
 
 ```bash
-# Set role to software engineer
+# Set role to software engineer (auto-detects scope)
 /set-role software-engineer
+
+# Set role globally (affects all projects)
+/set-role software-engineer --global
+
+# Set role for current project only
+/set-role qa-engineer --project
+
+# Explicitly specify scope
+/set-role product-manager --scope global
 
 # Set role to product manager
 /set-role product-manager
@@ -84,21 +113,30 @@ When this command is executed:
      ```
    - After template setup completes, proceed with step 3
 
-3. **If setup is complete**, call the role-manager.sh script:
+3. **Parse scope arguments**:
+   - Extract role name and any scope flags (--global, --project, --scope)
+   - Determine scope value:
+     - If `--global` present: scope = "global"
+     - If `--project` present: scope = "project"
+     - If `--scope <value>` present: scope = value
+     - Otherwise: scope = "auto" (default)
+
+4. **If setup is complete**, call the role-manager.sh script with scope:
    ```bash
-   bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh set-role [role-name]
+   # Pass scope as environment variable
+   SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh set-role [role-name]
    ```
 
-4. The script will:
-   - Find the nearest `.claude` directory
+5. The script will:
+   - Use the scope parameter to determine config directory (find_config_dir function)
    - Validate the role exists in `.claude/role-guides/`
-   - Update `.claude/preferences.json` with `user_role` field
-   - Initialize `.claude/role-references.json` if needed
-   - Display the document list with existence status
+   - Update appropriate `preferences.json` (global or project) with `user_role` field
+   - Initialize `role-references.json` if needed
+   - Display which config was updated and the document list with existence status
 
-5. If the role is invalid, the script will list available roles for the current organizational level
+6. If the role is invalid, the script will list available roles for the current organizational level
 
-6. After successful execution, inform the user:
+7. After successful execution, inform the user:
    - Which documents will load on next session
    - Which documents exist (✓), are missing (!), or can be generated (?)
    - For missing documents, suggest: "Use /generate-document to create missing documents"
@@ -108,7 +146,7 @@ When this command is executed:
 
 ```
 ✓ Role set to: software-engineer
-✓ Updated: .claude/preferences.json
+✓ Updated: .claude/preferences.json (project scope)
 
 Initializing document references from role guide...
 
@@ -126,6 +164,16 @@ Documents that will load on next session:
   ? development-setup.md
 
 Legend: ✓ exists | ! missing | ? can be generated
+
+Start a new session to load this context.
+```
+
+**Example with global scope:**
+```
+✓ Role set to: software-engineer
+✓ Updated: ~/.claude/preferences.json (global scope)
+
+This role will be used across all projects unless overridden.
 
 Start a new session to load this context.
 ```
