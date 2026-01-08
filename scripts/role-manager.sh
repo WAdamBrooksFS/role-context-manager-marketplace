@@ -25,8 +25,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/level-detector.sh" 2>/dev/null || true
 source "$SCRIPT_DIR/doc-validator.sh" 2>/dev/null || true
 
-# Find nearest .claude directory
-find_claude_dir() {
+# =============================================================================
+# Multi-Scope Configuration Support (v1.4.0)
+# =============================================================================
+
+# Find project-level .claude directory (searches upward from PWD)
+find_claude_dir_upward() {
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
         if [[ -d "$dir/.claude" ]]; then
@@ -35,8 +39,238 @@ find_claude_dir() {
         fi
         dir="$(dirname "$dir")"
     done
-    echo ""
     return 1
+}
+
+# Backward compatibility alias
+find_claude_dir() {
+    find_claude_dir_upward
+}
+
+# Check if running in project context (has .claude directory)
+is_project_context() {
+    find_claude_dir_upward &>/dev/null
+}
+
+# Find configuration directory with scope support
+# Args:
+#   $1: scope (auto|project|global) - default: auto
+# Returns:
+#   Path to config directory
+find_config_dir() {
+    local scope="${1:-auto}"
+
+    case "$scope" in
+        global)
+            # Force global config
+            echo "$HOME/.claude"
+            return 0
+            ;;
+        project)
+            # Force project config (must exist)
+            find_claude_dir_upward || return 1
+            ;;
+        auto)
+            # Try project first, fallback to global
+            find_claude_dir_upward || echo "$HOME/.claude"
+            return 0
+            ;;
+        *)
+            echo "Error: Invalid scope '$scope'. Use auto, project, or global." >&2
+            return 1
+            ;;
+    esac
+}
+
+# Get effective config directory (project overrides global)
+get_effective_config_dir() {
+    find_claude_dir_upward || echo "$HOME/.claude"
+}
+
+# Ensure global config directory exists with defaults
+ensure_global_config() {
+    if [[ ! -d "$HOME/.claude" ]]; then
+        mkdir -p "$HOME/.claude"
+        echo "✓ Created global config directory: ~/.claude/" >&2
+
+        # Initialize with sensible defaults
+        cat > "$HOME/.claude/preferences.json" <<'EOF'
+{
+  "user_role": null,
+  "auto_update_templates": true,
+  "applied_template": null
+}
+EOF
+        echo "✓ Initialized global preferences" >&2
+    fi
+}
+
+# Get plugin installation directory
+get_plugin_dir() {
+    # Claude Code sets CLAUDE_PLUGIN_DIR when plugin loads
+    echo "${CLAUDE_PLUGIN_DIR:-$SCRIPT_DIR/..}"
+}
+
+# Resolve template path from plugin installation
+get_template_path() {
+    local template_name="$1"
+    local plugin_dir="$(get_plugin_dir)"
+    echo "$plugin_dir/templates/$template_name"
+}
+
+# Resolve document paths with multi-scope support
+# Args:
+#   $1: document path (absolute from root or relative)
+# Returns:
+#   Resolved absolute path if found, otherwise original path
+resolve_document_path() {
+    local doc_path="$1"
+
+    # Absolute path from project root (starts with /)
+    if [[ "$doc_path" =~ ^/ ]]; then
+        local project_root
+        project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+        local resolved="$project_root${doc_path}"
+        if [[ -f "$resolved" ]]; then
+            echo "$resolved"
+            return 0
+        fi
+        # Return path even if not found, for error reporting
+        echo "$resolved"
+        return 1
+    fi
+
+    # Relative path - search in order of precedence
+
+    # 1. Current directory
+    if [[ -f "$PWD/$doc_path" ]]; then
+        echo "$PWD/$doc_path"
+        return 0
+    fi
+
+    # 2. Project root (if in project context)
+    if is_project_context; then
+        local project_root
+        project_root="$(dirname "$(find_claude_dir_upward)")"
+        if [[ -f "$project_root/$doc_path" ]]; then
+            echo "$project_root/$doc_path"
+            return 0
+        fi
+    fi
+
+    # 3. Global .claude directory (for global-only docs)
+    if [[ -f "$HOME/.claude/$doc_path" ]]; then
+        echo "$HOME/.claude/$doc_path"
+        return 0
+    fi
+
+    # Not found - return original for error reporting
+    echo "$doc_path"
+    return 1
+}
+
+# Read preference with scope hierarchy (project overrides global)
+# Args:
+#   $1: preference key (e.g., "user_role")
+# Returns:
+#   Preference value (project > global > empty)
+get_preference() {
+    local key="$1"
+
+    # Try project config first
+    if is_project_context; then
+        local project_config="$(find_claude_dir_upward)/preferences.json"
+        if [[ -f "$project_config" ]]; then
+            local value
+            if command -v jq &> /dev/null; then
+                value=$(jq -r ".$key // empty" "$project_config" 2>/dev/null)
+            else
+                value=$(grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$project_config" 2>/dev/null | \
+                    sed 's/.*"\([^"]*\)"/\1/')
+            fi
+            if [[ -n "$value" ]]; then
+                echo "$value"
+                return 0
+            fi
+        fi
+    fi
+
+    # Fallback to global config
+    local global_config="$HOME/.claude/preferences.json"
+    if [[ -f "$global_config" ]]; then
+        if command -v jq &> /dev/null; then
+            jq -r ".$key // empty" "$global_config" 2>/dev/null || echo ""
+        else
+            grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$global_config" 2>/dev/null | \
+                sed 's/.*"\([^"]*\)"/\1/' || echo ""
+        fi
+    fi
+}
+
+# Set preference with scope control
+# Args:
+#   $1: key
+#   $2: value
+#   $3: scope (auto|project|global) - default: auto
+set_preference() {
+    local key="$1"
+    local value="$2"
+    local scope="${3:-auto}"
+
+    local config_dir
+    case "$scope" in
+        global)
+            config_dir="$HOME/.claude"
+            ensure_global_config
+            ;;
+        project)
+            config_dir="$(find_claude_dir_upward)"
+            if [[ -z "$config_dir" ]]; then
+                echo "Error: Not in a project context. Cannot use --project scope." >&2
+                return 1
+            fi
+            ;;
+        auto)
+            # Write to project if in project, else global
+            if is_project_context; then
+                config_dir="$(find_claude_dir_upward)"
+            else
+                config_dir="$HOME/.claude"
+                ensure_global_config
+            fi
+            ;;
+        *)
+            echo "Error: Invalid scope '$scope'" >&2
+            return 1
+            ;;
+    esac
+
+    mkdir -p "$config_dir"
+    local prefs_file="$config_dir/preferences.json"
+
+    # Create file if doesn't exist
+    if [[ ! -f "$prefs_file" ]]; then
+        echo "{}" > "$prefs_file"
+    fi
+
+    # Update using jq
+    if command -v jq &> /dev/null; then
+        local temp_file
+        temp_file="$(mktemp)"
+        jq --arg key "$key" --arg value "$value" '.[$key] = $value' "$prefs_file" > "$temp_file"
+        mv "$temp_file" "$prefs_file"
+    else
+        # Fallback: simple sed replacement
+        if grep -q "\"$key\"" "$prefs_file"; then
+            sed -i.bak "s/\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"$key\": \"$value\"/" "$prefs_file"
+            rm -f "$prefs_file.bak"
+        else
+            sed -i.bak 's/{/{\n  "'"$key"'": "'"$value"'",/' "$prefs_file"
+            rm -f "$prefs_file.bak"
+        fi
+    fi
+
+    echo "✓ Updated $key in: $prefs_file" >&2
 }
 
 # Ensure .claude directory exists
