@@ -951,6 +951,148 @@ check_template_updates() {
 }
 
 # =============================================================================
+# Role Selection Assistant Helper Functions (v1.4.0)
+# =============================================================================
+
+# List all available roles as JSON array
+cmd_list_roles_json() {
+    local claude_dir
+    claude_dir="$(find_claude_dir)" || {
+        echo "[]"
+        return 0
+    }
+
+    local role_guides_dir="$claude_dir/role-guides"
+
+    if [[ ! -d "$role_guides_dir" ]]; then
+        echo "[]"
+        return 0
+    fi
+
+    # Build JSON array of role names
+    local roles=()
+    while IFS= read -r file; do
+        local basename=$(basename "$file" .md)
+        # Remove -guide suffix if present
+        basename=${basename%-guide}
+        roles+=("\"$basename\"")
+    done < <(find "$role_guides_dir" -maxdepth 1 -name "*.md" 2>/dev/null | sort)
+
+    # Generate JSON array
+    if [[ ${#roles[@]} -eq 0 ]]; then
+        echo "[]"
+    else
+        echo "["
+        local first=true
+        for role in "${roles[@]}"; do
+            if [[ "$first" == "true" ]]; then
+                echo -n "  $role"
+                first=false
+            else
+                echo ","
+                echo -n "  $role"
+            fi
+        done
+        echo ""
+        echo "]"
+    fi
+}
+
+# Infer organizational level from role name using heuristics
+infer_org_level_from_role() {
+    local role="$1"
+
+    # Convert to lowercase for matching
+    local role_lower=$(echo "$role" | tr '[:upper:]' '[:lower:]')
+
+    # Executive roles -> company
+    if [[ "$role_lower" =~ ^(cto|cpo|ciso|vp-|chief-|executive) ]]; then
+        echo "company"
+        return 0
+    fi
+
+    # Management/architect roles -> system
+    if [[ "$role_lower" =~ (manager|architect|platform-engineer|technical-lead|director|lead) ]]; then
+        echo "system"
+        return 0
+    fi
+
+    # Product roles -> product
+    if [[ "$role_lower" =~ (product-manager|designer|ux-|ui-|qa-manager|product-owner) ]]; then
+        echo "product"
+        return 0
+    fi
+
+    # Default to project (implementation roles)
+    echo "project"
+    return 0
+}
+
+# Get all roles grouped by organizational level as JSON
+cmd_get_all_roles_by_level() {
+    local claude_dir
+    claude_dir="$(find_claude_dir)" || {
+        echo '{"company":[],"system":[],"product":[],"project":[]}'
+        return 0
+    }
+
+    local role_guides_dir="$claude_dir/role-guides"
+
+    if [[ ! -d "$role_guides_dir" ]]; then
+        echo '{"company":[],"system":[],"product":[],"project":[]}'
+        return 0
+    fi
+
+    # Initialize associative arrays for levels
+    declare -A levels
+    levels[company]=""
+    levels[system]=""
+    levels[product]=""
+    levels[project]=""
+
+    # Read each role guide and categorize
+    while IFS= read -r file; do
+        local basename=$(basename "$file" .md)
+        # Remove -guide suffix if present
+        basename=${basename%-guide}
+
+        # Try to extract org level from file content
+        local org_level=""
+        if grep -qi "Organizational Level:" "$file"; then
+            # Extract the level from the file (case-insensitive)
+            org_level=$(grep -i "Organizational Level:" "$file" | head -1 | \
+                sed 's/.*[Oo]rganizational [Ll]evel: *\([^ ,]*\).*/\1/' | \
+                tr '[:upper:]' '[:lower:]')
+
+            # Validate the extracted level
+            if [[ ! "$org_level" =~ ^(company|system|product|project)$ ]]; then
+                org_level=""
+            fi
+        fi
+
+        # If no explicit level found, use heuristic
+        if [[ -z "$org_level" ]]; then
+            org_level=$(infer_org_level_from_role "$basename")
+        fi
+
+        # Add to appropriate level
+        if [[ -n "${levels[$org_level]}" ]]; then
+            levels[$org_level]="${levels[$org_level]},\"$basename\""
+        else
+            levels[$org_level]="\"$basename\""
+        fi
+    done < <(find "$role_guides_dir" -maxdepth 1 -name "*.md" 2>/dev/null | sort)
+
+    # Build JSON output
+    echo "{"
+    echo "  \"company\": [${levels[company]}],"
+    echo "  \"system\": [${levels[system]}],"
+    echo "  \"product\": [${levels[product]}],"
+    echo "  \"project\": [${levels[project]}]"
+    echo "}"
+}
+
+# =============================================================================
 # Main dispatcher (not typically called directly)
 # =============================================================================
 
@@ -971,8 +1113,14 @@ main() {
         update|update-role-docs)
             cmd_update_role_docs "$@"
             ;;
+        list-roles-json)
+            cmd_list_roles_json "$@"
+            ;;
+        get-all-roles-by-level)
+            cmd_get_all_roles_by_level "$@"
+            ;;
         *)
-            echo "Usage: $0 {show|set|init|update} [args...]" >&2
+            echo "Usage: $0 {show|set|init|update|list-roles-json|get-all-roles-by-level} [args...]" >&2
             exit 2
             ;;
     esac

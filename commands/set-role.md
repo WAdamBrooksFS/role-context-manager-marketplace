@@ -121,22 +121,64 @@ When this command is executed:
      - If `--scope <value>` present: scope = value
      - Otherwise: scope = "auto" (default)
 
-4. **If setup is complete**, call the role-manager.sh script with scope:
+4. **If setup is complete**, call the role-manager.sh script with scope and handle errors:
    ```bash
-   # Pass scope as environment variable
-   SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh set-role [role-name]
+   # Pass scope as environment variable and capture exit code
+   EXIT_CODE=0
+   OUTPUT=$(SCOPE=[scope] bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh set-role [role-name] 2>&1) || EXIT_CODE=$?
+
+   if [[ $EXIT_CODE -eq 1 ]]; then
+       # Role not found - invoke role selection assistant
+
+       # Get current org level
+       CURRENT_LEVEL=$(bash ~/.claude/plugins/role-context-manager/scripts/level-detector.sh)
+
+       # Get available roles at current level as JSON
+       AVAILABLE_ROLES=$(bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh list-roles-json)
+
+       # Get all roles by level as JSON
+       ALL_ROLES=$(bash ~/.claude/plugins/role-context-manager/scripts/role-manager.sh get-all-roles-by-level)
+
+       # Invoke role selection assistant agent
+       Use Task tool with:
+         subagent_type: 'role-selection-assistant'
+         description: 'Help user find and set correct role'
+         prompt: 'The user tried to set their role to "[role-name]" but it doesn't exist at the current organizational level.
+
+   Current context:
+   - Requested role: [role-name]
+   - Current org level: $CURRENT_LEVEL
+   - Scope: [scope]
+   - Available roles at this level: $AVAILABLE_ROLES
+   - All roles by level: $ALL_ROLES
+
+   Please guide the user through finding and setting the appropriate role.'
+
+   elif [[ $EXIT_CODE -eq 0 ]]; then
+       # Success - show output
+       echo "$OUTPUT"
+   else
+       # Other error - show error
+       echo "$OUTPUT" >&2
+       exit $EXIT_CODE
+   fi
    ```
 
-5. The script will:
-   - Use the scope parameter to determine config directory (find_config_dir function)
-   - Validate the role exists in `.claude/role-guides/`
-   - Update appropriate `preferences.json` (global or project) with `user_role` field
-   - Initialize `role-references.json` if needed
-   - Display which config was updated and the document list with existence status
+5. **On success (exit code 0)**, the script will have:
+   - Used the scope parameter to determine config directory
+   - Validated the role exists in `.claude/role-guides/`
+   - Updated appropriate `preferences.json` (global or project) with `user_role` field
+   - Initialized `role-references.json` if needed
+   - Displayed which config was updated and the document list with existence status
 
-6. If the role is invalid, the script will list available roles for the current organizational level
+6. **On role not found (exit code 1)**, the role-selection-assistant agent will:
+   - Show available roles at the current organizational level
+   - Offer to search other organizational levels
+   - Offer to create a new role guide
+   - Guide the user through selecting or creating their role
+   - Optionally update the organizational level to match the selected role
 
-7. After successful execution, inform the user:
+7. After successful execution (either direct success or via agent), inform the user:
    - Which documents will load on next session
    - Which documents exist (✓), are missing (!), or can be generated (?)
    - For missing documents, suggest: "Use /generate-document to create missing documents"
