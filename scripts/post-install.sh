@@ -94,7 +94,8 @@ if command -v jq &>/dev/null; then
     # Read existing settings and add/update hooks.SessionStart
     jq '.hooks.SessionStart = [
         "/validate-setup --quiet",
-        "/sync-template --check-only"
+        "/sync-template --check-only",
+        "/load-role-context --quiet"
     ]' "$SETTINGS_FILE" > "$temp_file"
 
     mv "$temp_file" "$SETTINGS_FILE"
@@ -110,6 +111,7 @@ if command -v jq &>/dev/null; then
     echo "The following commands will run on session start:"
     echo "  1. /validate-setup --quiet - Validates .claude directory setup"
     echo "  2. /sync-template --check-only - Checks for template updates"
+    echo "  3. /load-role-context --quiet - Loads your role guide and documents"
     echo ""
 
     if [[ "$ACTUAL_SCOPE" == "global" ]]; then

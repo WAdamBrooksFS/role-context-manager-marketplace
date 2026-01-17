@@ -94,13 +94,14 @@ claude plugin install role-context-manager --scope project
 
 ## SessionStart Hook
 
-The plugin automatically validates your setup and checks for template updates when you start a new Claude Code session.
+The plugin automatically validates your setup, checks for template updates, and loads your role context when you start a new Claude Code session.
 
 ### What Happens on Session Start
 
 **Automatic checks** (configured by default):
 1. **Setup validation** (`/validate-setup --quiet`): Checks if .claude directory is properly configured
 2. **Template sync check** (`/sync-template --check-only`): Checks for template updates (if `auto_update_templates` is enabled)
+3. **Role context loading** (`/load-role-context --quiet`): Loads your role guide and referenced documents into context
 
 ### Output Examples
 
@@ -108,6 +109,7 @@ The plugin automatically validates your setup and checks for template updates wh
 ```
 ✓ Setup valid
 ✓ Template up-to-date (software-org v1.0.0)
+✓ Role context loaded: software-engineer (5 documents)
 ```
 
 **When setup is incomplete:**
@@ -136,37 +138,39 @@ Would you like to initialize your organizational framework now?
 
 The SessionStart hook is automatically configured when you first use any plugin command. You can customize what runs on session start by editing `.claude/settings.json`:
 
-**Minimal** (validation only):
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      "/validate-setup --silent"
-    ]
-  }
-}
-```
-
-**Standard** (validation + update check) - default:
+**Minimal** (validation + role loading):
 ```json
 {
   "hooks": {
     "SessionStart": [
       "/validate-setup --quiet",
-      "/sync-template --check-only"
+      "/load-role-context --quiet"
     ]
   }
 }
 ```
 
-**Verbose** (validation + updates + role context):
+**Standard** (validation + update check + role loading) - default:
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      "/validate-setup --quiet",
+      "/sync-template --check-only",
+      "/load-role-context --quiet"
+    ]
+  }
+}
+```
+
+**Verbose** (full output with metadata):
 ```json
 {
   "hooks": {
     "SessionStart": [
       "/validate-setup",
-      "/sync-template --check-only",
-      "/show-role-context --summary"
+      "/sync-template",
+      "/load-role-context --verbose"
     ]
   }
 }
@@ -202,6 +206,7 @@ If hooks aren't running automatically:
 /set-role software-engineer --global
 
 # Works everywhere, override in projects as needed
+# Your role guide will automatically load on next session start
 ```
 
 **Option 2: Project-Specific (Recommended for teams)**
@@ -214,6 +219,7 @@ cd your-project
 # Set project role
 /set-role qa-engineer --project
 
+# Role guide will automatically load for all team members on session start
 # Commit .claude/ to git for team
 ```
 
@@ -347,6 +353,38 @@ All commands support scope parameters (new in v1.3.0):
 - Documents that will load (with ✓ exists, ! missing, - excluded)
 - Custom additions and removals
 - Source indicators (from global vs from project)
+
+### `/load-role-context [--quiet|--verbose]`
+
+**Purpose**: Load your role guide and referenced documents into the current session context
+
+**Usage**:
+- `/load-role-context` - Load with full context wrapper
+- `/load-role-context --quiet` - Load with one-line summary (used in SessionStart hook)
+- `/load-role-context --verbose` - Load with detailed metadata
+
+**What it does**:
+1. Reads your configured role guide (respects project > global hierarchy)
+2. Extracts all document references from the role guide
+3. Loads all referenced documents that exist
+4. Injects everything into Claude's session context
+5. Never fails or blocks - exits silently if no role is set
+
+**Output modes**:
+- **Quiet**: `✓ Role context loaded: software-engineer (5 documents)`
+- **Normal**: Full role guide + all documents with context wrapper
+- **Verbose**: Includes metadata (scope, paths, document list)
+
+**When to use**:
+- Automatically runs on SessionStart (recommended)
+- Manual invocation after changing roles mid-session
+- Debugging to see exactly what's being loaded
+- Immediate loading without restarting session
+
+**Notes**:
+- Gracefully handles missing role or role guide (no errors)
+- Loads documents best-effort (skips missing files)
+- Project role overrides global role automatically
 
 ### `/update-role-docs [+/-]file ... [--global|--project]`
 

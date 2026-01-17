@@ -852,6 +852,185 @@ cmd_update_role_docs() {
     cmd_show_role_context
 }
 
+# Load role context for session (automatic loading on SessionStart)
+cmd_load_role_context() {
+    local mode="normal"
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --quiet)
+                mode="quiet"
+                shift
+                ;;
+            --verbose)
+                mode="verbose"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    # Get effective config directory (project overrides global)
+    local config_dir
+    config_dir="$(get_effective_config_dir)"
+
+    # Get current role using multi-scope hierarchy
+    local current_role
+    current_role="$(get_preference "user_role")"
+
+    # No role set - exit silently (not an error)
+    if [[ -z "$current_role" || "$current_role" == "null" ]]; then
+        exit 0
+    fi
+
+    # Get role guide path
+    local role_guide
+    role_guide="$(get_role_guide_path "$config_dir" "$current_role")"
+
+    # Role guide missing - exit silently in quiet mode, warn in normal/verbose
+    if [[ -z "$role_guide" || ! -f "$role_guide" ]]; then
+        if [[ "$mode" != "quiet" ]]; then
+            echo "Warning: Role guide not found for role: $current_role" >&2
+        fi
+        exit 0
+    fi
+
+    # Read role guide content
+    local role_guide_content
+    role_guide_content="$(cat "$role_guide")"
+
+    # Extract document references
+    local doc_refs_json
+    doc_refs_json="$(extract_document_references "$role_guide")"
+
+    # Parse document references into array
+    local doc_paths=()
+    if command -v jq &> /dev/null; then
+        while IFS= read -r doc_path; do
+            [[ -n "$doc_path" ]] && doc_paths+=("$doc_path")
+        done < <(echo "$doc_refs_json" | jq -r '.[]' 2>/dev/null)
+    fi
+
+    # Read each document (best effort)
+    local doc_contents=()
+    local loaded_count=0
+
+    for doc_path in "${doc_paths[@]}"; do
+        local resolved_path
+        resolved_path="$(resolve_document_path "$doc_path" 2>/dev/null)" || resolved_path=""
+
+        if [[ -n "$resolved_path" && -f "$resolved_path" ]]; then
+            local doc_content
+            doc_content="$(cat "$resolved_path" 2>/dev/null)" || doc_content=""
+
+            if [[ -n "$doc_content" ]]; then
+                doc_contents+=("$doc_path|$doc_content")
+                ((loaded_count++))
+            fi
+        fi
+    done
+
+    # Output based on mode
+    case "$mode" in
+        quiet)
+            # One-line summary for SessionStart hook
+            echo "✓ Role context loaded: $current_role ($loaded_count documents)"
+            ;;
+        verbose)
+            # Full output with metadata
+            echo "=== ROLE CONTEXT LOADED ==="
+            echo ""
+            echo "Role: $current_role"
+            echo "Scope: $(is_project_context && echo "project" || echo "global")"
+            echo "Role guide: $role_guide"
+            echo "Documents loaded: $loaded_count/${#doc_paths[@]}"
+            echo ""
+
+            if [[ $loaded_count -gt 0 ]]; then
+                echo "Document list:"
+                for doc_info in "${doc_contents[@]}"; do
+                    local doc_path="${doc_info%%|*}"
+                    echo "  - $doc_path"
+                done
+                echo ""
+            fi
+
+            echo "You are collaborating with a user in the role: $current_role"
+            echo ""
+            echo "The following role guide defines how you should assist this user:"
+            echo ""
+            echo "---"
+            echo "$role_guide_content"
+            echo "---"
+            echo ""
+
+            if [[ $loaded_count -gt 0 ]]; then
+                echo "## Referenced Documents"
+                echo ""
+                echo "The following documents are part of this role's context:"
+                echo ""
+
+                for doc_info in "${doc_contents[@]}"; do
+                    local doc_path="${doc_info%%|*}"
+                    local doc_content="${doc_info#*|}"
+
+                    echo "### Document: $doc_path"
+                    echo "---"
+                    echo "$doc_content"
+                    echo "---"
+                    echo ""
+                done
+            fi
+
+            echo "This context is automatically loaded for this session. Follow the"
+            echo "deterministic behaviors and leverage the agentic opportunities defined above."
+            echo ""
+            echo "=== END ROLE CONTEXT ==="
+            ;;
+        *)
+            # Normal mode - full role guide + documents with context wrapper
+            echo "=== ROLE CONTEXT LOADED ==="
+            echo ""
+            echo "You are collaborating with a user in the role: $current_role"
+            echo ""
+            echo "The following role guide defines how you should assist this user:"
+            echo ""
+            echo "---"
+            echo "$role_guide_content"
+            echo "---"
+            echo ""
+
+            if [[ $loaded_count -gt 0 ]]; then
+                echo "## Referenced Documents"
+                echo ""
+                echo "The following documents are part of this role's context:"
+                echo ""
+
+                for doc_info in "${doc_contents[@]}"; do
+                    local doc_path="${doc_info%%|*}"
+                    local doc_content="${doc_info#*|}"
+
+                    echo "### Document: $doc_path"
+                    echo "---"
+                    echo "$doc_content"
+                    echo "---"
+                    echo ""
+                done
+            fi
+
+            echo "This context is automatically loaded for this session. Follow the"
+            echo "deterministic behaviors and leverage the agentic opportunities defined above."
+            echo ""
+            echo "=== END ROLE CONTEXT ==="
+            ;;
+    esac
+
+    exit 0
+}
+
 # =============================================================================
 # Template Integration Functions (v1.1.0)
 # =============================================================================
@@ -1113,6 +1292,9 @@ main() {
         update|update-role-docs)
             cmd_update_role_docs "$@"
             ;;
+        load|load-role-context)
+            cmd_load_role_context "$@"
+            ;;
         list-roles-json)
             cmd_list_roles_json "$@"
             ;;
@@ -1120,7 +1302,7 @@ main() {
             cmd_get_all_roles_by_level "$@"
             ;;
         *)
-            echo "Usage: $0 {show|set|init|update|list-roles-json|get-all-roles-by-level} [args...]" >&2
+            echo "Usage: $0 {show|set|init|update|load|list-roles-json|get-all-roles-by-level} [args...]" >&2
             exit 2
             ;;
     esac

@@ -328,6 +328,7 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 | `/set-role` | Set your current role | `--global`, `--project`, `--scope` |
 | `/set-org-level` | Set organizational level | `--global`, `--project` |
 | `/show-role-context` | Display current configuration | (none) |
+| `/load-role-context` | Load role guide and documents into context | `--quiet`, `--verbose` |
 | `/update-role-docs` | Customize document references | `--global`, `--project` |
 | `/init-role-docs` | Reset to role guide defaults | `--reset` |
 | `/generate-document` | Generate documents from templates | `--auto` |
@@ -403,7 +404,8 @@ cd special-project
   "hooks": {
     "SessionStart": [
       "/validate-setup --quiet",
-      "/sync-template --check-only"
+      "/sync-template --check-only",
+      "/load-role-context --quiet"
     ]
   }
 }
@@ -413,6 +415,7 @@ cd special-project
 
 - `/validate-setup --quiet` - Validates setup, shows one-line summary
 - `/sync-template --check-only` - Checks for updates (respects auto_update_templates preference)
+- `/load-role-context --quiet` - Loads your role guide and referenced documents into context
 
 ### Example Outputs
 
@@ -420,6 +423,7 @@ Success:
 ```
 ✓ Setup valid
 ✓ Template up-to-date (software-org v1.0.0)
+✓ Role context loaded: software-engineer (5 documents)
 ```
 
 Issues detected:

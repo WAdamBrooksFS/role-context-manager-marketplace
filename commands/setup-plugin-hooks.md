@@ -56,7 +56,7 @@ When this command is executed:
 1. Check if hook is already configured in target scope:
    - Read appropriate `settings.json` (or `settings.local.json` if it exists)
    - Look for `hooks.SessionStart` array
-   - Check if it includes `/validate-setup --quiet` and `/sync-template --check-only`
+   - Check if it includes `/validate-setup --quiet`, `/sync-template --check-only`, and `/load-role-context --quiet`
 
 2. Check for marker file in appropriate location:
    - Global: `~/.claude/.role-context-manager-setup-complete`
@@ -86,6 +86,7 @@ Location: [~/.claude/settings.json OR ./.claude/settings.json]
 Current configuration:
   - /validate-setup --quiet (validates .claude directory)
   - /sync-template --check-only (checks for template updates)
+  - /load-role-context --quiet (loads role guide and documents)
 
 No action needed. The hook will run on your next session start.
 ```
@@ -99,6 +100,7 @@ Location: [~/.claude/settings.json OR ./.claude/settings.json]
 The following commands will now run when you start a Claude Code session:
   1. /validate-setup --quiet - Validates .claude directory setup
   2. /sync-template --check-only - Checks for template updates
+  3. /load-role-context --quiet - Loads your role guide and documents
 
 Restart Claude Code or start a new session to activate the hook.
 ```
@@ -115,7 +117,8 @@ Please configure manually by adding the following to .claude/settings.json:
   "hooks": {
     "SessionStart": [
       "/validate-setup --quiet",
-      "/sync-template --check-only"
+      "/sync-template --check-only",
+      "/load-role-context --quiet"
     ]
   }
 }
@@ -137,7 +140,8 @@ If the automatic script fails, you can manually add the hook configuration:
      "hooks": {
        "SessionStart": [
          "/validate-setup --quiet",
-         "/sync-template --check-only"
+         "/sync-template --check-only",
+         "/load-role-context --quiet"
        ]
      }
    }
@@ -150,7 +154,8 @@ If the automatic script fails, you can manually add the hook configuration:
      "hooks": {
        "SessionStart": [
          "/validate-setup --quiet",
-         "/sync-template --check-only"
+         "/sync-template --check-only",
+         "/load-role-context --quiet"
        ]
      }
    }
@@ -208,41 +213,49 @@ When configured, the SessionStart hook runs automatically:
    - Notifies you if update available
    - Never applies updates automatically
 
+3. **Role Context Loading** (`/load-role-context --quiet`):
+   - Loads your configured role guide into session context
+   - Loads all documents referenced in the role guide
+   - Enables Claude to immediately understand your role requirements
+   - Silent if no role is configured (graceful degradation)
+
 ## Customizing Hook Behavior
 
 You can customize what runs on session start by editing `.claude/settings.json`:
 
-**Minimal** (validation only):
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      "/validate-setup --silent"
-    ]
-  }
-}
-```
-
-**Standard** (validation + update check) - recommended:
+**Minimal** (validation + role loading):
 ```json
 {
   "hooks": {
     "SessionStart": [
       "/validate-setup --quiet",
-      "/sync-template --check-only"
+      "/load-role-context --quiet"
     ]
   }
 }
 ```
 
-**Verbose** (validation + updates + role context):
+**Standard** (validation + update check + role loading) - recommended:
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      "/validate-setup --quiet",
+      "/sync-template --check-only",
+      "/load-role-context --quiet"
+    ]
+  }
+}
+```
+
+**Verbose** (full output with metadata):
 ```json
 {
   "hooks": {
     "SessionStart": [
       "/validate-setup",
-      "/sync-template --check-only",
-      "/show-role-context --summary"
+      "/sync-template",
+      "/load-role-context --verbose"
     ]
   }
 }
