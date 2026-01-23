@@ -1,0 +1,33 @@
+graph TD
+    V1[V1: Verify Command Documentation]
+    V2[V2: Verify Function Implementation]
+    V3[V3: Verify Hook Configuration]
+    V4[V4: Verify setup-plugin-hooks.md]
+    V5[V5: Verify README.md]
+    V6[V6: Verify CHEATSHEET.md]
+    V7[V7: Test All Output Modes]
+    V8[V8: Test No Role Edge Case]
+    V9[V9: Test Document Loading]
+    V10[V10: Verify Helper Functions]
+
+    %% Dependencies
+    V1 --> V2
+    V1 --> V7
+    V2 --> V7
+    V3 --> V7
+    V10 --> V7
+    V7 --> V8
+    V7 --> V9
+
+    %% Styling
+    classDef phase1 fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef phase2 fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef phase3 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef phase4 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    classDef phase5 fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+
+    class V1,V10 phase1
+    class V2,V3 phase2
+    class V4,V5,V6 phase3
+    class V7 phase4
+    class V8,V9 phase5

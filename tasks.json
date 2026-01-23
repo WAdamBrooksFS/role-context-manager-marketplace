@@ -1,0 +1,931 @@
+{
+  "$schema": "./task-schema.json",
+  "version": "1.0",
+  "blueprint_source": "./WEAVER_BLUEPRINT.md",
+  "generated_at": "2026-01-23T10:30:00Z",
+  "thread_id": "auto-role-loading-verification",
+
+  "metadata": {
+    "total_tasks": 10,
+    "estimated_agent_loops": 10,
+    "critical_path": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10"],
+    "parallelizable_groups": [
+      ["V4", "V5", "V6"]
+    ]
+  },
+
+  "tasks": [
+    {
+      "id": "V1",
+      "name": "Verify command documentation exists and is complete",
+      "type": "verification",
+      "description": "Verify that commands/load-role-context.md exists and contains all required sections: purpose, usage, options, behavior, output modes, Claude instructions",
+      "priority": 1,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 154,
+        "concerns": ["documentation-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "commands/load-role-context.md",
+          "action": "READ",
+          "purpose": "Verify command documentation completeness"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "commands/load-role-context.md"
+        ],
+        "dependencies": [],
+        "exemplars": [
+          {
+            "path": "commands/show-role-context.md",
+            "reason": "Shows existing command documentation pattern"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 3000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must document all three output modes (--quiet, normal, --verbose)",
+          "source": "WEAVER_BLUEPRINT.md section 1",
+          "example": "### Options: --quiet, --verbose"
+        },
+        {
+          "rule": "Must explain multi-scope hierarchy",
+          "source": "WEAVER_BLUEPRINT.md section 1",
+          "example": "Project role overrides global role"
+        },
+        {
+          "rule": "Must document SessionStart hook integration",
+          "source": "WEAVER_BLUEPRINT.md section 1",
+          "example": "hooks.SessionStart configuration examples"
+        }
+      ],
+
+      "validation": {
+        "command": "test -f commands/load-role-context.md && grep -q '## Purpose' commands/load-role-context.md && grep -q '## Usage' commands/load-role-context.md && grep -q -- '--quiet' commands/load-role-context.md && grep -q -- '--verbose' commands/load-role-context.md && grep -q 'Multi-Scope' commands/load-role-context.md && grep -q 'SessionStart' commands/load-role-context.md",
+        "expected_outcome": "All required sections and flags are documented",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "commands/load-role-context.md"
+        },
+        {
+          "type": "content_contains",
+          "file": "commands/load-role-context.md",
+          "patterns": ["## Purpose", "## Usage", "--quiet", "--verbose", "Multi-Scope", "SessionStart"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "test -f commands/load-role-context.md"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": ["V2", "V7"]
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["documentation-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V2",
+      "name": "Verify cmd_load_role_context function implementation",
+      "type": "verification",
+      "description": "Verify that scripts/role-manager.sh contains cmd_load_role_context() function with all 11 logic flow steps from the plan",
+      "priority": 2,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 174,
+        "concerns": ["function-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/role-manager.sh",
+          "action": "READ",
+          "purpose": "Verify function implementation completeness"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/role-manager.sh"
+        ],
+        "dependencies": [],
+        "exemplars": [
+          {
+            "path": "docs/IMPLEMENTATION-PLAN-AUTO-ROLE-LOADING.md",
+            "reason": "Contains the 11 logic flow steps to verify"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 5000
+      },
+
+      "constraints": [
+        {
+          "rule": "Function must parse three modes: quiet, normal, verbose",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "case \"$1\" in --quiet|--verbose)"
+        },
+        {
+          "rule": "Must use get_effective_config_dir()",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "config_dir=\"$(get_effective_config_dir)\""
+        },
+        {
+          "rule": "Must use extract_document_references()",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "doc_refs_json=\"$(extract_document_references \"$role_guide\")\""
+        },
+        {
+          "rule": "Must always exit with code 0 (never block)",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "exit 0"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q 'cmd_load_role_context()' scripts/role-manager.sh && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_effective_config_dir' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_preference' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'extract_document_references' && grep -q 'load|load-role-context)' scripts/role-manager.sh",
+        "expected_outcome": "Function exists with all required helper function calls and dispatcher entry",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "cmd_load_role_context"
+        },
+        {
+          "type": "content_contains",
+          "file": "scripts/role-manager.sh",
+          "patterns": ["cmd_load_role_context()", "get_effective_config_dir", "get_preference", "extract_document_references", "load|load-role-context)"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/role-manager.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["V1"],
+        "blocks": ["V7"]
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V3",
+      "name": "Verify SessionStart hook configuration",
+      "type": "verification",
+      "description": "Verify that scripts/post-install.sh configures SessionStart hook with all three commands in correct order: validate, sync, load-role-context",
+      "priority": 3,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 50,
+        "concerns": ["hook-configuration"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/post-install.sh",
+          "action": "READ",
+          "purpose": "Verify hook configuration"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/post-install.sh"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 1500
+      },
+
+      "constraints": [
+        {
+          "rule": "Must include /load-role-context --quiet as third command",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "\"/load-role-context --quiet\""
+        },
+        {
+          "rule": "Hook order: validate → sync → load",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "[\"/validate-setup --quiet\", \"/sync-template --check-only\", \"/load-role-context --quiet\"]"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -A 3 'hooks.SessionStart' scripts/post-install.sh | grep -q '/load-role-context --quiet' && grep -B 1 '/load-role-context --quiet' scripts/post-install.sh | grep -q '/sync-template --check-only'",
+        "expected_outcome": "Hook configuration includes load-role-context as third command",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "content_contains",
+          "file": "scripts/post-install.sh",
+          "patterns": ["/load-role-context --quiet", "hooks.SessionStart"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/post-install.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": ["V7"]
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V4",
+      "name": "Verify setup-plugin-hooks.md documentation updates",
+      "type": "verification",
+      "description": "Verify that commands/setup-plugin-hooks.md includes load-role-context in all hook examples (minimal, standard, verbose)",
+      "priority": 4,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 100,
+        "concerns": ["documentation-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "commands/setup-plugin-hooks.md",
+          "action": "READ",
+          "purpose": "Verify hook documentation completeness"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "commands/setup-plugin-hooks.md"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 2000
+      },
+
+      "constraints": [
+        {
+          "rule": "Minimal config must include /load-role-context --quiet",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "Minimal configuration example"
+        },
+        {
+          "rule": "Standard config must include all three commands",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "Standard configuration (recommended)"
+        },
+        {
+          "rule": "Verbose config must include /load-role-context --verbose",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "Verbose configuration"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -c '/load-role-context' commands/setup-plugin-hooks.md | awk '$1 >= 3 {exit 0} {exit 1}'",
+        "expected_outcome": "At least 3 occurrences of /load-role-context in different configurations",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "content_contains",
+          "file": "commands/setup-plugin-hooks.md",
+          "patterns": ["/load-role-context --quiet", "/load-role-context --verbose"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "test -f commands/setup-plugin-hooks.md"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["documentation-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V5",
+      "name": "Verify README.md documentation updates",
+      "type": "verification",
+      "description": "Verify that README.md documents /load-role-context command with usage, options, behavior, and hook integration",
+      "priority": 4,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 200,
+        "concerns": ["documentation-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "README.md",
+          "action": "READ",
+          "purpose": "Verify main documentation completeness"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "README.md"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 8000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must document /load-role-context command",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "### `/load-role-context [--quiet|--verbose]`"
+        },
+        {
+          "rule": "Must list in SessionStart hook section",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "3. **Role context loading**"
+        },
+        {
+          "rule": "Hook examples must include the command",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "\"/load-role-context --quiet\""
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q '/load-role-context' README.md && grep -c '/load-role-context' README.md | awk '$1 >= 5 {exit 0} {exit 1}'",
+        "expected_outcome": "At least 5 references to /load-role-context throughout README",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "content_contains",
+          "file": "README.md",
+          "patterns": ["/load-role-context", "### `/load-role-context", "Role context loading"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "test -f README.md"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["documentation-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V6",
+      "name": "Verify CHEATSHEET.md documentation updates",
+      "type": "verification",
+      "description": "Verify that CHEATSHEET.md includes /load-role-context command in commands table and hook examples",
+      "priority": 4,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 50,
+        "concerns": ["documentation-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "CHEATSHEET.md",
+          "action": "READ",
+          "purpose": "Verify cheatsheet completeness"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "CHEATSHEET.md"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 2000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must include command in commands table",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "| `/load-role-context` | Load role guide and documents | `--quiet`, `--verbose` |"
+        },
+        {
+          "rule": "Must include in hook examples",
+          "source": "WEAVER_BLUEPRINT.md section 3",
+          "example": "\"/load-role-context --quiet\""
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q 'load-role-context' CHEATSHEET.md && grep -c 'load-role-context' CHEATSHEET.md | awk '$1 >= 2 {exit 0} {exit 1}'",
+        "expected_outcome": "At least 2 references to load-role-context in cheatsheet",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "content_contains",
+          "file": "CHEATSHEET.md",
+          "patterns": ["load-role-context"]
+        },
+        {
+          "type": "command_succeeds",
+          "command": "test -f CHEATSHEET.md"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["documentation-analysis", "grep"]
+      }
+    },
+
+    {
+      "id": "V7",
+      "name": "Test command execution in all three modes",
+      "type": "functional-test",
+      "description": "Execute /load-role-context in quiet, normal, and verbose modes to verify all output formats work correctly",
+      "priority": 5,
+
+      "atomicity": {
+        "file_count": 2,
+        "estimated_lines": 50,
+        "concerns": ["functional-testing"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/role-manager.sh",
+          "action": "EXECUTE",
+          "purpose": "Test command execution"
+        },
+        {
+          "path": "commands/load-role-context.md",
+          "action": "READ",
+          "purpose": "Reference for expected behavior"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/role-manager.sh",
+          "commands/load-role-context.md"
+        ],
+        "dependencies": [
+          ".claude/preferences.json"
+        ],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 3,
+        "estimated_tokens": 4000
+      },
+
+      "constraints": [
+        {
+          "rule": "Quiet mode must output single line",
+          "source": "WEAVER_BLUEPRINT.md section 4",
+          "example": "✓ Role context loaded: {role-name} ({count} documents)"
+        },
+        {
+          "rule": "Normal mode must include context wrapper",
+          "source": "WEAVER_BLUEPRINT.md section 4",
+          "example": "=== ROLE CONTEXT LOADED ==="
+        },
+        {
+          "rule": "Verbose mode must include metadata",
+          "source": "WEAVER_BLUEPRINT.md section 4",
+          "example": "Scope: project or global"
+        },
+        {
+          "rule": "All modes must exit with code 0",
+          "source": "WEAVER_BLUEPRINT.md section 4",
+          "example": "exit 0"
+        }
+      ],
+
+      "validation": {
+        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet > /tmp/quiet_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context > /tmp/normal_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context --verbose > /tmp/verbose_test.txt 2>&1 && test $? -eq 0 && grep -q '✓ Role context loaded' /tmp/quiet_test.txt && grep -q '=== ROLE CONTEXT LOADED ===' /tmp/normal_test.txt && grep -q 'Scope:' /tmp/verbose_test.txt",
+        "expected_outcome": "All three modes execute successfully with correct output format",
+        "timeout_seconds": 60,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "command_succeeds",
+          "command": "bash scripts/role-manager.sh load-role-context --quiet"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash scripts/role-manager.sh load-role-context"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash scripts/role-manager.sh load-role-context --verbose"
+        },
+        {
+          "type": "exit_code_equals",
+          "command": "bash scripts/role-manager.sh load-role-context --quiet",
+          "expected_code": 0
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["V1", "V2", "V3"],
+        "blocks": ["V8", "V9"]
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-execution", "output-validation"]
+      }
+    },
+
+    {
+      "id": "V8",
+      "name": "Test graceful degradation (no role set)",
+      "type": "edge-case-test",
+      "description": "Test that command exits silently (code 0) when no role is set in preferences",
+      "priority": 6,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 20,
+        "concerns": ["edge-case-testing"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/role-manager.sh",
+          "action": "EXECUTE",
+          "purpose": "Test edge case behavior"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/role-manager.sh"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 2000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must exit with code 0 when no role set",
+          "source": "WEAVER_BLUEPRINT.md section 5",
+          "example": "if [[ -z \"$current_role\" ]]; then exit 0; fi"
+        },
+        {
+          "rule": "Must be silent (no error output)",
+          "source": "WEAVER_BLUEPRINT.md section 5",
+          "example": "Silent exit in quiet mode"
+        }
+      ],
+
+      "validation": {
+        "command": "cd /home/practice-adam-brooks/role-context-manager && temp_pref=$(mktemp) && cp .claude/preferences.json \"$temp_pref\" && jq 'del(.user_role)' .claude/preferences.json > .claude/preferences.json.tmp && mv .claude/preferences.json.tmp .claude/preferences.json && bash scripts/role-manager.sh load-role-context --quiet > /tmp/no_role_test.txt 2>&1; exit_code=$?; mv \"$temp_pref\" .claude/preferences.json; test $exit_code -eq 0",
+        "expected_outcome": "Command exits with code 0 and produces no error output when no role is set",
+        "timeout_seconds": 60,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "exit_code_equals",
+          "command": "bash scripts/role-manager.sh load-role-context --quiet",
+          "expected_code": 0
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["V7"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-execution", "edge-case-testing"]
+      }
+    },
+
+    {
+      "id": "V9",
+      "name": "Test document reference extraction and loading",
+      "type": "functional-test",
+      "description": "Verify that extract_document_references() function is called and documents are loaded from role guide",
+      "priority": 7,
+
+      "atomicity": {
+        "file_count": 2,
+        "estimated_lines": 50,
+        "concerns": ["functional-testing"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/role-manager.sh",
+          "action": "EXECUTE",
+          "purpose": "Test document loading"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/role-manager.sh"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 3000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must call extract_document_references()",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "extract_document_references \"$role_guide\""
+        },
+        {
+          "rule": "Must load documents and count them",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "loaded_count variable"
+        },
+        {
+          "rule": "Must display document count in output",
+          "source": "WEAVER_BLUEPRINT.md section 4",
+          "example": "({count} documents)"
+        }
+      ],
+
+      "validation": {
+        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet 2>&1 | grep -q 'documents)' && bash scripts/role-manager.sh load-role-context --verbose 2>&1 | grep -q 'Documents loaded:'",
+        "expected_outcome": "Output shows document count, indicating documents were extracted and loaded",
+        "timeout_seconds": 60,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "command_output_contains",
+          "command": "bash scripts/role-manager.sh load-role-context --quiet",
+          "expected_pattern": "documents)"
+        },
+        {
+          "type": "command_output_contains",
+          "command": "bash scripts/role-manager.sh load-role-context --verbose",
+          "expected_pattern": "Documents loaded:"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["V7"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-execution", "output-validation"]
+      }
+    },
+
+    {
+      "id": "V10",
+      "name": "Verify helper function dependencies exist",
+      "type": "verification",
+      "description": "Verify that all required helper functions exist in role-manager.sh: get_effective_config_dir, get_preference, get_role_guide_path, extract_document_references, resolve_document_path",
+      "priority": 8,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 50,
+        "concerns": ["dependency-verification"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/role-manager.sh",
+          "action": "READ",
+          "purpose": "Verify helper function existence"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/role-manager.sh"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 2000
+      },
+
+      "constraints": [
+        {
+          "rule": "Must have get_effective_config_dir function",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "get_effective_config_dir()"
+        },
+        {
+          "rule": "Must have get_preference function",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "get_preference()"
+        },
+        {
+          "rule": "Must have get_role_guide_path function",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "get_role_guide_path()"
+        },
+        {
+          "rule": "Must have extract_document_references function",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "extract_document_references()"
+        },
+        {
+          "rule": "Must have resolve_document_path function",
+          "source": "WEAVER_BLUEPRINT.md section 2",
+          "example": "resolve_document_path()"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q '^get_effective_config_dir()' scripts/role-manager.sh && grep -q '^get_preference()' scripts/role-manager.sh && grep -q '^get_role_guide_path()' scripts/role-manager.sh && grep -q '^extract_document_references()' scripts/role-manager.sh && grep -q '^resolve_document_path()' scripts/role-manager.sh",
+        "expected_outcome": "All five required helper functions exist in the script",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "get_effective_config_dir"
+        },
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "get_preference"
+        },
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "get_role_guide_path"
+        },
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "extract_document_references"
+        },
+        {
+          "type": "function_exists",
+          "file": "scripts/role-manager.sh",
+          "function_name": "resolve_document_path"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": ["V7"]
+      },
+
+      "agent_assignment": {
+        "type": "verifier",
+        "capabilities_required": ["bash-analysis", "grep"]
+      }
+    }
+  ],
+
+  "validation_summary": {
+    "all_tasks_have_validation": true,
+    "test_first_tasks": [],
+    "validation_commands": [
+      "test -f commands/load-role-context.md",
+      "grep -q 'cmd_load_role_context()' scripts/role-manager.sh",
+      "grep -q '/load-role-context --quiet' scripts/post-install.sh",
+      "bash scripts/role-manager.sh load-role-context --quiet",
+      "bash scripts/role-manager.sh load-role-context",
+      "bash scripts/role-manager.sh load-role-context --verbose"
+    ]
+  },
+
+  "execution_plan": {
+    "phases": [
+      {
+        "phase": 1,
+        "name": "Static Documentation Verification",
+        "tasks": ["V1", "V10"],
+        "parallel": true
+      },
+      {
+        "phase": 2,
+        "name": "Implementation Verification",
+        "tasks": ["V2", "V3"],
+        "parallel": true
+      },
+      {
+        "phase": 3,
+        "name": "Documentation Completeness",
+        "tasks": ["V4", "V5", "V6"],
+        "parallel": true
+      },
+      {
+        "phase": 4,
+        "name": "Functional Testing",
+        "tasks": ["V7"],
+        "parallel": false
+      },
+      {
+        "phase": 5,
+        "name": "Edge Case and Integration Testing",
+        "tasks": ["V8", "V9"],
+        "parallel": true
+      }
+    ],
+    "estimated_total_loops": 10,
+    "checkpoint_after": ["V3", "V6", "V7", "V9"]
+  }
+}
