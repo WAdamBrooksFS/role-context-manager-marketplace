@@ -93,9 +93,14 @@ if command -v jq &>/dev/null; then
 
     # Read existing settings and add/update hooks.SessionStart
     jq '.hooks.SessionStart = [
-        {"type": "command", "command": "/validate-setup --quiet"},
-        {"type": "command", "command": "/sync-template --check-only"},
-        {"type": "command", "command": "/load-role-context --quiet"}
+        {
+            "matcher": "",
+            "hooks": [
+                {"type": "command", "command": "/validate-setup --quiet"},
+                {"type": "command", "command": "/sync-template --check-only"},
+                {"type": "command", "command": "/load-role-context --quiet"}
+            ]
+        }
     ]' "$SETTINGS_FILE" > "$temp_file"
 
     mv "$temp_file" "$SETTINGS_FILE"
@@ -128,9 +133,14 @@ else
     echo "Add the following to $SETTINGS_FILE:" >&2
     echo '  "hooks": {' >&2
     echo '    "SessionStart": [' >&2
-    echo '      {"type": "command", "command": "/validate-setup --quiet"},' >&2
-    echo '      {"type": "command", "command": "/sync-template --check-only"},' >&2
-    echo '      {"type": "command", "command": "/load-role-context --quiet"}' >&2
+    echo '      {' >&2
+    echo '        "matcher": "",' >&2
+    echo '        "hooks": [' >&2
+    echo '          {"type": "command", "command": "/validate-setup --quiet"},' >&2
+    echo '          {"type": "command", "command": "/sync-template --check-only"},' >&2
+    echo '          {"type": "command", "command": "/load-role-context --quiet"}' >&2
+    echo '        ]' >&2
+    echo '      }' >&2
     echo '    ]' >&2
     echo '  }' >&2
     exit 1
