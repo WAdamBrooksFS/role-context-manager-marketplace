@@ -93,9 +93,9 @@ if command -v jq &>/dev/null; then
 
     # Read existing settings and add/update hooks.SessionStart
     jq '.hooks.SessionStart = [
-        "/validate-setup --quiet",
-        "/sync-template --check-only",
-        "/load-role-context --quiet"
+        {"type": "command", "command": "/validate-setup --quiet"},
+        {"type": "command", "command": "/sync-template --check-only"},
+        {"type": "command", "command": "/load-role-context --quiet"}
     ]' "$SETTINGS_FILE" > "$temp_file"
 
     mv "$temp_file" "$SETTINGS_FILE"
@@ -123,12 +123,14 @@ if command -v jq &>/dev/null; then
     echo "Restart Claude Code or start a new session to activate the hook."
 else
     echo "Error: jq not found. Please install jq to continue." >&2
-    echo ""echo "Manual setup instructions:" >&2
+    echo "" >&2
+    echo "Manual setup instructions:" >&2
     echo "Add the following to $SETTINGS_FILE:" >&2
     echo '  "hooks": {' >&2
     echo '    "SessionStart": [' >&2
-    echo '      "/validate-setup --quiet",' >&2
-    echo '      "/sync-template --check-only"' >&2
+    echo '      {"type": "command", "command": "/validate-setup --quiet"},' >&2
+    echo '      {"type": "command", "command": "/sync-template --check-only"},' >&2
+    echo '      {"type": "command", "command": "/load-role-context --quiet"}' >&2
     echo '    ]' >&2
     echo '  }' >&2
     exit 1

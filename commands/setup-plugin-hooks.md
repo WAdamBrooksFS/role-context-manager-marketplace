@@ -116,9 +116,9 @@ Please configure manually by adding the following to .claude/settings.json:
 {
   "hooks": {
     "SessionStart": [
-      "/validate-setup --quiet",
-      "/sync-template --check-only",
-      "/load-role-context --quiet"
+      {"type": "command", "command": "/validate-setup --quiet"},
+      {"type": "command", "command": "/sync-template --check-only"},
+      {"type": "command", "command": "/load-role-context --quiet"}
     ]
   }
 }
@@ -139,9 +139,9 @@ If the automatic script fails, you can manually add the hook configuration:
    {
      "hooks": {
        "SessionStart": [
-         "/validate-setup --quiet",
-         "/sync-template --check-only",
-         "/load-role-context --quiet"
+         {"type": "command", "command": "/validate-setup --quiet"},
+         {"type": "command", "command": "/sync-template --check-only"},
+         {"type": "command", "command": "/load-role-context --quiet"}
        ]
      }
    }
@@ -153,9 +153,9 @@ If the automatic script fails, you can manually add the hook configuration:
      "existing": "configuration",
      "hooks": {
        "SessionStart": [
-         "/validate-setup --quiet",
-         "/sync-template --check-only",
-         "/load-role-context --quiet"
+         {"type": "command", "command": "/validate-setup --quiet"},
+         {"type": "command", "command": "/sync-template --check-only"},
+         {"type": "command", "command": "/load-role-context --quiet"}
        ]
      }
    }
@@ -228,8 +228,8 @@ You can customize what runs on session start by editing `.claude/settings.json`:
 {
   "hooks": {
     "SessionStart": [
-      "/validate-setup --quiet",
-      "/load-role-context --quiet"
+      {"type": "command", "command": "/validate-setup --quiet"},
+      {"type": "command", "command": "/load-role-context --quiet"}
     ]
   }
 }
@@ -240,9 +240,9 @@ You can customize what runs on session start by editing `.claude/settings.json`:
 {
   "hooks": {
     "SessionStart": [
-      "/validate-setup --quiet",
-      "/sync-template --check-only",
-      "/load-role-context --quiet"
+      {"type": "command", "command": "/validate-setup --quiet"},
+      {"type": "command", "command": "/sync-template --check-only"},
+      {"type": "command", "command": "/load-role-context --quiet"}
     ]
   }
 }
@@ -253,9 +253,9 @@ You can customize what runs on session start by editing `.claude/settings.json`:
 {
   "hooks": {
     "SessionStart": [
-      "/validate-setup",
-      "/sync-template",
-      "/load-role-context --verbose"
+      {"type": "command", "command": "/validate-setup"},
+      {"type": "command", "command": "/sync-template"},
+      {"type": "command", "command": "/load-role-context --verbose"}
     ]
   }
 }
