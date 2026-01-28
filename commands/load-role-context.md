@@ -145,9 +145,58 @@ The loaded context shapes how Claude assists you, ensuring consistency with your
 
 ## Implementation Details
 
-**Delegates to:** `scripts/role-manager.sh load-role-context`
+This command invokes a bash script to load role context. Follow these steps:
 
-**Exit codes:**
+### Script Invocation Instructions
+
+1. **Determine plugin directory path:**
+   ```bash
+   # Check if CLAUDE_PLUGIN_DIR is set (Claude Code sets this)
+   if [ -n "$CLAUDE_PLUGIN_DIR" ]; then
+       PLUGIN_DIR="$CLAUDE_PLUGIN_DIR"
+   else
+       # Fallback: Common installation location
+       PLUGIN_DIR="$HOME/.claude/plugins/role-context-manager"
+   fi
+   ```
+
+2. **Verify script exists:**
+   ```bash
+   SCRIPT_PATH="$PLUGIN_DIR/scripts/role-manager.sh"
+   if [ ! -f "$SCRIPT_PATH" ]; then
+       echo "Error: role-manager.sh not found at $SCRIPT_PATH" >&2
+       exit 2
+   fi
+   ```
+
+3. **Invoke the script with arguments:**
+   ```bash
+   bash "$PLUGIN_DIR/scripts/role-manager.sh" load-role-context "$@"
+   ```
+
+   The script will:
+   - Parse command-line flags (`--quiet`, `--verbose`)
+   - Determine configuration scope (project vs global)
+   - Load current role from preferences
+   - Read role guide file
+   - Extract document references
+   - Output formatted content based on flags
+
+4. **Pass through all command arguments:**
+   - `--quiet` → Single-line summary for hooks
+   - `--verbose` → Detailed metadata output
+   - No flags → Full role guide and document content
+
+### Exit Codes
+
 - `0`: Success (even if no role set or guide missing - graceful degradation)
+- `2`: System error (script not found, permissions issue)
 
-**No errors:** This command never fails to avoid blocking SessionStart hooks.
+**Critical:** This command never fails to avoid blocking SessionStart hooks. If there's an issue, it exits with code 0 and logs a warning.
+
+### Example Invocation
+
+When user runs `/load-role-context --quiet`, execute:
+```bash
+bash "$CLAUDE_PLUGIN_DIR/scripts/role-manager.sh" load-role-context --quiet
+```
