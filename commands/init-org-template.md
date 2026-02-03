@@ -81,8 +81,14 @@ When this command is executed, you should invoke the **template-setup-assistant 
    - Load available templates from the plugin's `templates/` directory
    - Present template options with descriptions and recommendations
    - Ask clarifying questions to determine the best fit
+   - **Guide role guide selection (Section 3.6)**:
+     - Present available role guides for the organizational level
+     - Allow user to select specific guides or include all
+     - Support custom role guide creation (CUSTOM:name)
+     - Filter based on parent-level inheritance
    - Get user approval before applying template
-   - Copy template files to appropriate `.claude/` directory (global or project)
+   - Copy template files and selected role guides to appropriate `.claude/` directory
+   - Generate placeholder markdown for any custom role guides
    - Set up initial configuration in appropriate scope
    - Record applied template in appropriate preferences file
    - Guide user to next steps (/set-role with appropriate scope)

@@ -580,13 +580,174 @@ get_template_size() {
   echo "Files: $file_count"
 }
 
+# Generate a placeholder markdown template for a custom role guide
+# Usage: generate_custom_role_guide_placeholder <role-name> <org-level>
+# Output: Markdown content to stdout
+generate_custom_role_guide_placeholder() {
+  local role_name="$1"
+  local org_level="${2:-project}"
+
+  # Convert kebab-case to Title Case for display
+  local display_name=$(echo "$role_name" | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
+
+  cat <<EOF
+# $display_name - AI Collaboration Guide
+
+## Role Overview
+
+**Primary Responsibility:** [Define the main purpose of this role]
+**Organizational Level:** $org_level
+**Key Documents Created:** [List documents this role typically creates]
+**Key Documents Consumed:** [List documents this role uses for context]
+
+## Deterministic Behaviors
+
+### When [Primary Task Context]
+
+**AI MUST:**
+- [Define specific rules Claude must follow]
+- [Add validation requirements]
+- [Add security or compliance checks]
+- [Add quality standards that must be met]
+
+**Validation Checklist:**
+- [ ] [Specific validation item 1]
+- [ ] [Specific validation item 2]
+- [ ] [Specific validation item 3]
+
+### When [Secondary Task Context]
+
+**AI MUST:**
+- [Define rules for secondary workflow]
+- [Add relevant checks]
+
+## Agentic Opportunities
+
+### Proactive Suggestions
+
+**AI SHOULD:**
+- Suggest when [scenario where AI can add value]
+- Recommend [opportunities for improvement]
+- Identify when [conditions that warrant attention]
+- Propose [optimizations or enhancements]
+- Flag when [risks or issues are detected]
+
+### [Role-Specific] Support
+
+**AI CAN help with:**
+- [Task category 1]
+- [Task category 2]
+- [Task category 3]
+- [Task category 4]
+
+**AI CANNOT:**
+- [Boundary: things AI should not do]
+- [Limitation: actions requiring human judgment]
+- [Restriction: decisions outside AI scope]
+
+## Common Workflows
+
+### Workflow 1: [Primary Workflow Name]
+
+\`\`\`
+1. $display_name: "[User initiates workflow]"
+2. AI: [AI responds with...]
+   - [Action 1]
+   - [Action 2]
+3. AI: [AI performs next step...]
+4. $display_name: [User validates or provides input]
+5. AI: [AI completes workflow]
+\`\`\`
+
+**Workflow Checkpoints:**
+- After step 2: [What to validate]
+- After step 3: [What to verify]
+- Completion: [Final checks before marking done]
+
+### Workflow 2: [Secondary Workflow Name]
+
+\`\`\`
+1. $display_name: "[User initiates alternate workflow]"
+2. AI: [Steps for alternate workflow...]
+\`\`\`
+
+## Document Integration
+
+**When working with this role, Claude should reference:**
+- [Document type 1] - [Why it's relevant]
+- [Document type 2] - [How to use it]
+- [Document type 3] - [When to update it]
+
+**Cross-references to other roles:**
+- Collaborates with: [Related role 1], [Related role 2]
+- Reports to: [Management role]
+- Supports: [Dependent roles]
+
+---
+
+> **Note:** This is a placeholder template. Run \`/generate-role-guide\` for an AI-assisted customization workflow,
+> or manually edit this guide to add role-specific deterministic rules, agentic behaviors, and workflows.
+>
+> **For guidance on customizing role guides:** See \`.claude/document-guides/role-guide-creation.md\` (if available)
+EOF
+}
+
 # Apply template with specific mode
 apply_template_with_mode() {
   local template_id="$1"
   local mode="${2:-standard}"  # minimal, standard, or complete
   local target_dir="${3:-.}"   # Default to current directory
+  local selected_role_guides="${4:-}"  # Optional: comma-separated list of role guides to include
 
   echo "Applying template: $template_id (mode: $mode)"
+
+  # Parse selected role guides if provided
+  local -a role_guides_to_copy=()
+  local -a custom_guides=()
+
+  if [ -n "$selected_role_guides" ]; then
+    echo "Processing role guide selection: $selected_role_guides"
+
+    # Split by comma and process each entry
+    IFS=',' read -ra guides <<< "$selected_role_guides"
+    for guide in "${guides[@]}"; do
+      # Trim whitespace
+      guide=$(echo "$guide" | xargs)
+
+      # Check for CUSTOM: prefix
+      if [[ "$guide" =~ ^CUSTOM: ]]; then
+        # Extract custom guide name (everything after "CUSTOM:")
+        local custom_name="${guide#CUSTOM:}"
+        custom_name=$(echo "$custom_name" | xargs)
+
+        # Validate custom name (no path traversal, kebab-case format)
+        if [[ "$custom_name" =~ \.\. ]] || [[ "$custom_name" =~ / ]]; then
+          echo "Error: Invalid custom guide name '$custom_name' (no path traversal allowed)" >&2
+          return 1
+        fi
+
+        if [[ ! "$custom_name" =~ ^[a-z][a-z0-9-]*$ ]]; then
+          echo "Error: Custom guide name '$custom_name' must be kebab-case (lowercase, hyphens only)" >&2
+          return 1
+        fi
+
+        custom_guides+=("$custom_name")
+      else
+        # Regular guide file - validate no path traversal
+        if [[ "$guide" =~ \.\. ]] || [[ "$guide" =~ / ]]; then
+          echo "Error: Invalid guide name '$guide' (no path traversal allowed)" >&2
+          return 1
+        fi
+
+        role_guides_to_copy+=("$guide")
+      fi
+    done
+
+    echo "Selected guides to copy: ${role_guides_to_copy[*]}"
+    if [ ${#custom_guides[@]} -gt 0 ]; then
+      echo "Custom guides to create: ${custom_guides[*]}"
+    fi
+  fi
 
   # Detect parent context for hierarchy-aware role guide filtering
   local parent_claude_dir=""
@@ -723,26 +884,68 @@ apply_template_with_mode() {
         local filtered_count=0
         local copied_count=0
 
-        echo "Filtering role guides based on parent level: $parent_level"
+        # Check if user provided explicit selection
+        if [ ${#role_guides_to_copy[@]} -gt 0 ] || [ ${#custom_guides[@]} -gt 0 ]; then
+          echo "Copying selected role guides only"
 
-        # Copy role guides selectively
-        for guide_file in "$role_guides_source"/*.md; do
-          if [ -f "$guide_file" ]; then
-            local guide_name
-            guide_name=$(basename "$guide_file")
+          # Copy explicitly selected guides
+          for guide_name in "${role_guides_to_copy[@]}"; do
+            local guide_file="$role_guides_source/$guide_name"
 
-            # Check if we should include this guide
+            if [ ! -f "$guide_file" ]; then
+              echo "Warning: Selected guide '$guide_name' not found in template" >&2
+              continue
+            fi
+
+            # Check if guide should be included (respects parent filtering)
             if should_include_role_guide "$guide_name" "${current_level:-project}" "$parent_level"; then
               cp "$guide_file" "$role_guides_dest/"
+              echo "  Copied: $guide_name"
               ((copied_count++))
             else
-              echo "  Skipping $guide_name (inherited from parent $parent_level level)" >&2
+              echo "  Skipped: $guide_name (inherited from parent $parent_level level)" >&2
               ((filtered_count++))
             fi
-          fi
-        done
+          done
 
-        echo "Role guide filtering: copied $copied_count, filtered $filtered_count (inherited from parent)"
+          # Generate custom guide placeholders
+          for custom_name in "${custom_guides[@]}"; do
+            local custom_file="$role_guides_dest/${custom_name}-guide.md"
+
+            # Generate placeholder content
+            if generate_custom_role_guide_placeholder "$custom_name" "${current_level:-project}" > "$custom_file"; then
+              echo "  Created custom guide: ${custom_name}-guide.md"
+              ((copied_count++))
+            else
+              echo "Warning: Failed to create custom guide: $custom_name" >&2
+            fi
+          done
+
+          echo "Role guide selection: copied $copied_count guides, filtered $filtered_count (inherited from parent)"
+
+        else
+          # No explicit selection - copy all with parent filtering (backward compatible)
+          echo "Filtering role guides based on parent level: $parent_level"
+
+          # Copy role guides selectively
+          for guide_file in "$role_guides_source"/*.md; do
+            if [ -f "$guide_file" ]; then
+              local guide_name
+              guide_name=$(basename "$guide_file")
+
+              # Check if we should include this guide
+              if should_include_role_guide "$guide_name" "${current_level:-project}" "$parent_level"; then
+                cp "$guide_file" "$role_guides_dest/"
+                ((copied_count++))
+              else
+                echo "  Skipping $guide_name (inherited from parent $parent_level level)" >&2
+                ((filtered_count++))
+              fi
+            fi
+          done
+
+          echo "Role guide filtering: copied $copied_count, filtered $filtered_count (inherited from parent)"
+        fi
       fi
     elif [ -d "$source_path" ]; then
       # Copy directory

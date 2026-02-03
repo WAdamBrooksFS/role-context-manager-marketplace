@@ -261,6 +261,143 @@ bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode <template-id> <mode> .
 bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode software-org standard .
 ```
 
+### 3.6. Select Role Guides (Interactive)
+
+**After selecting the application mode**, guide the user through selecting which role guides to include. This step is optional but recommended for focused setups.
+
+**Why this matters**:
+- Reduces clutter by including only relevant roles
+- Allows creation of custom role guides not in templates
+- Respects organizational hierarchy (filters parent-level roles)
+- Maintains backward compatibility (empty selection = all guides)
+
+**What to do**:
+1. Get available role guides for the organizational level
+2. Present user with a numbered list including custom option
+3. Allow multi-select of guides
+4. Build selection string for template application
+
+**How to get available guides**:
+```bash
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+source $PLUGIN_DIR/scripts/template-manager.sh
+
+# Get guides appropriate for this organizational level
+available_guides=$(get_role_guides_for_level "$org_level")
+
+# Output is newline-separated list of guide filenames
+# Example: "software-engineer-guide.md\nqa-engineer-guide.md\n..."
+```
+
+**Presentation format**:
+Present guides as a numbered menu with option 0 for custom guides:
+
+```
+Available role guides for [level] level:
+
+0. custom - Create a custom role guide (specify name)
+1. software-engineer-guide.md - Software development implementation
+2. qa-engineer-guide.md - Quality assurance and testing
+3. devops-engineer-guide.md - Infrastructure and deployment
+[...]
+
+Enter selections (comma-separated numbers or 'all'):
+```
+
+**Selection processing**:
+- **"all"** or empty → Use empty selection string (backward compatible, copies all)
+- **Numeric selections** → Map numbers to guide filenames
+- **Number 0 (custom)** → Prompt for custom role name in kebab-case
+- **Multiple selections** → e.g., "1,2,0" → prompt for custom name(s)
+
+**Custom guide name validation**:
+```bash
+# Validate custom name format
+if [[ ! "$custom_name" =~ ^[a-z][a-z0-9-]*$ ]]; then
+  echo "Error: Custom guide name must be kebab-case (lowercase, hyphens only)"
+  echo "Examples: devops-lead, security-architect, mobile-engineer"
+  # Re-prompt
+fi
+
+# Check for path traversal
+if [[ "$custom_name" =~ \.\. ]] || [[ "$custom_name" =~ / ]]; then
+  echo "Error: Invalid characters in custom guide name"
+  # Re-prompt
+fi
+```
+
+**Building selection string**:
+The selection string is a comma-separated list passed as the 4th parameter to `apply_template_with_mode()`:
+
+**Format**: `guide1.md,guide2.md,CUSTOM:name1,CUSTOM:name2`
+
+**Examples**:
+- User selects guides 1, 3: `"software-engineer-guide.md,devops-engineer-guide.md"`
+- User selects guide 2 and custom "platform-sre": `"qa-engineer-guide.md,CUSTOM:platform-sre"`
+- User selects custom "devops-lead": `"CUSTOM:devops-lead"`
+- User selects "all" or empty: `""` (empty string, copies all guides)
+
+**How to apply with role selection**:
+```bash
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+source $PLUGIN_DIR/scripts/template-manager.sh
+
+# Apply template with role guide selection
+# Parameters: template_id mode target_dir selected_role_guides
+apply_template_with_mode "$template_id" "$mode" "." "$selection_string"
+
+# Example with selection:
+apply_template_with_mode "software-org" "standard" "." "software-engineer-guide.md,CUSTOM:platform-sre"
+
+# Example with all guides (backward compatible):
+apply_template_with_mode "software-org" "standard" "." ""
+```
+
+**Parent filtering**:
+The template application will automatically filter out guides that should be inherited from parent organizational levels. If a user selects a guide that's filtered out, show a message:
+
+```
+Note: [guide-name] is inherited from parent [level] level and won't be duplicated
+```
+
+**Skip option**:
+Always offer users the option to skip role selection:
+- "Skip - Include all role guides for this level" → Use empty selection string
+
+**Example interaction flow**:
+```
+Claude: "Would you like to select specific role guides, or include all available guides for the project level?"
+
+User: "Let me select specific ones"
+
+Claude: "Available role guides for project level:
+
+0. custom - Create a custom role guide
+1. software-engineer-guide.md - Software development
+2. qa-engineer-guide.md - Quality assurance
+3. devops-engineer-guide.md - DevOps and infrastructure
+
+Enter selections (comma-separated numbers, 'all', or 'skip'): "
+
+User: "1,0"
+
+Claude: "You've selected:
+- software-engineer-guide.md
+
+You also chose to create a custom guide. What role name should I use?
+(Format: kebab-case, e.g., 'platform-engineer', 'security-lead'): "
+
+User: "platform-sre"
+
+Claude: "✓ Will create custom guide: platform-sre-guide.md
+
+Selection summary:
+- software-engineer-guide.md (from template)
+- platform-sre-guide.md (custom placeholder)
+
+Proceeding with template application..."
+```
+
 ### 3.7. Check for Existing CLAUDE.md Files
 
 **Before applying a template**, scan for existing CLAUDE.md files in the directory tree. These files contain project-specific AI guidance and should be preserved.

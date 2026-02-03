@@ -1271,6 +1271,170 @@ cmd_get_all_roles_by_level() {
     echo "}"
 }
 
+# Add role guides to existing setup
+cmd_add_role_guides() {
+    # Source template-manager for helper functions
+    local template_manager="$SCRIPT_DIR/template-manager.sh"
+    if [ ! -f "$template_manager" ]; then
+        echo "Error: template-manager.sh not found" >&2
+        return 1
+    fi
+    source "$template_manager"
+
+    # Also source hierarchy-detector if available
+    local hierarchy_detector="$SCRIPT_DIR/hierarchy-detector.sh"
+    if [ -f "$hierarchy_detector" ]; then
+        source "$hierarchy_detector"
+    fi
+
+    # Find .claude directory
+    local claude_dir
+    claude_dir=$(find_claude_dir) || {
+        echo "Error: Not in a role-context-manager setup (.claude directory not found)" >&2
+        echo "Run /init-org-template first to initialize the organizational structure" >&2
+        return 2
+    }
+
+    # Check if arguments provided
+    if [ $# -eq 0 ]; then
+        echo "Usage: /add-role-guides <guide1> [guide2] [CUSTOM:name] ..." >&2
+        echo "" >&2
+        echo "Examples:" >&2
+        echo "  /add-role-guides software-engineer-guide.md" >&2
+        echo "  /add-role-guides qa-engineer-guide.md CUSTOM:devops-lead" >&2
+        echo "  /add-role-guides CUSTOM:platform-sre CUSTOM:security-engineer" >&2
+        return 1
+    fi
+
+    # Get current organizational level
+    local org_level="project"
+    local org_level_file="$claude_dir/organizational-level.json"
+    if [ -f "$org_level_file" ]; then
+        org_level=$(jq -r '.level // "project"' "$org_level_file" 2>/dev/null || echo "project")
+    fi
+
+    # Get parent level if it exists
+    local parent_level=""
+    if [ -f "$org_level_file" ]; then
+        parent_level=$(jq -r '.parent_level // empty' "$org_level_file" 2>/dev/null || echo "")
+    fi
+
+    # Ensure role-guides directory exists
+    local role_guides_dir="$claude_dir/role-guides"
+    mkdir -p "$role_guides_dir"
+
+    echo "Adding role guides to: $claude_dir"
+    echo "Organizational level: $org_level"
+    if [ -n "$parent_level" ]; then
+        echo "Parent level: $parent_level (will filter inherited guides)"
+    fi
+    echo ""
+
+    local added_count=0
+    local skipped_count=0
+    local custom_count=0
+
+    # Process each argument
+    for guide_arg in "$@"; do
+        # Check for CUSTOM: prefix
+        if [[ "$guide_arg" =~ ^CUSTOM: ]]; then
+            # Extract custom guide name
+            local custom_name="${guide_arg#CUSTOM:}"
+            custom_name=$(echo "$custom_name" | xargs)
+
+            # Validate custom name
+            if [[ "$custom_name" =~ \.\. ]] || [[ "$custom_name" =~ / ]]; then
+                echo "Error: Invalid custom guide name '$custom_name' (no path traversal allowed)" >&2
+                continue
+            fi
+
+            if [[ ! "$custom_name" =~ ^[a-z][a-z0-9-]*$ ]]; then
+                echo "Error: Custom guide name '$custom_name' must be kebab-case (lowercase, hyphens only)" >&2
+                continue
+            fi
+
+            # Generate custom guide placeholder
+            local custom_file="$role_guides_dir/${custom_name}-guide.md"
+
+            if [ -f "$custom_file" ]; then
+                echo "  Skipped: ${custom_name}-guide.md (already exists)" >&2
+                ((skipped_count++))
+                continue
+            fi
+
+            if generate_custom_role_guide_placeholder "$custom_name" "$org_level" > "$custom_file"; then
+                echo "  ✓ Created custom guide: ${custom_name}-guide.md"
+                ((custom_count++))
+                ((added_count++))
+            else
+                echo "  Error: Failed to create custom guide: $custom_name" >&2
+            fi
+
+        else
+            # Regular guide file - find in templates
+            local guide_name="$guide_arg"
+
+            # Ensure .md extension
+            if [[ ! "$guide_name" =~ \.md$ ]]; then
+                guide_name="${guide_name}.md"
+            fi
+
+            # Check if guide should be included (parent filtering)
+            if [ -n "$parent_level" ]; then
+                if ! should_include_role_guide "$guide_name" "$org_level" "$parent_level"; then
+                    echo "  Skipped: $guide_name (inherited from parent $parent_level level)" >&2
+                    ((skipped_count++))
+                    continue
+                fi
+            fi
+
+            # Check if already exists
+            if [ -f "$role_guides_dir/$guide_name" ]; then
+                echo "  Skipped: $guide_name (already exists)" >&2
+                ((skipped_count++))
+                continue
+            fi
+
+            # Find guide in template system
+            local template_base="$PLUGIN_DIR/templates/core"
+            local guide_found=""
+
+            # Search for guide in template hierarchy
+            for template_dir in "$template_base"/*-template/.claude/role-guides; do
+                if [ -f "$template_dir/$guide_name" ]; then
+                    guide_found="$template_dir/$guide_name"
+                    break
+                fi
+            done
+
+            if [ -z "$guide_found" ]; then
+                echo "  Warning: Guide '$guide_name' not found in template system" >&2
+                echo "           Available guides can be listed with: /list-roles" >&2
+                ((skipped_count++))
+                continue
+            fi
+
+            # Copy guide
+            cp "$guide_found" "$role_guides_dir/"
+            echo "  ✓ Added: $guide_name"
+            ((added_count++))
+        fi
+    done
+
+    echo ""
+    echo "Summary: Added $added_count guides, created $custom_count custom placeholders, skipped $skipped_count"
+
+    if [ $added_count -gt 0 ] || [ $custom_count -gt 0 ]; then
+        echo ""
+        echo "Role guides have been added. To use them:"
+        echo "  1. Customize any placeholder content in new guides"
+        echo "  2. Run /set-role <role-name> to activate a role"
+        echo "  3. Run /load-role-context to load role context into session"
+    fi
+
+    return 0
+}
+
 # =============================================================================
 # Main dispatcher (not typically called directly)
 # =============================================================================
@@ -1301,8 +1465,11 @@ main() {
         get-all-roles-by-level)
             cmd_get_all_roles_by_level "$@"
             ;;
+        add-role-guides)
+            cmd_add_role_guides "$@"
+            ;;
         *)
-            echo "Usage: $0 {show|set|init|update|load|list-roles-json|get-all-roles-by-level} [args...]" >&2
+            echo "Usage: $0 {show|set|init|update|load|list-roles-json|get-all-roles-by-level|add-role-guides} [args...]" >&2
             exit 2
             ;;
     esac

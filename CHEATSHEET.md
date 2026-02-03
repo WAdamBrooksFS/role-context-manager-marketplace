@@ -1,6 +1,6 @@
 # Role Context Manager - Cheatsheet
 
-**Plugin Version:** 1.3.0
+**Plugin Version:** 1.6.0
 **Description:** Role-based document context manager for Claude Code
 
 ---
@@ -136,6 +136,36 @@
 
 ---
 
+#### `/add-role-guides <guide1> [guide2] [CUSTOM:name] ...`
+
+**Purpose:** Add role guides to existing setup (post-initialization)
+
+**Arguments:**
+- Guide filenames (e.g., `software-engineer-guide.md`) - Copy from template
+- `CUSTOM:name` - Create custom placeholder guide (e.g., `CUSTOM:platform-sre`)
+
+**What it does:**
+- Copies role guides from template system to `.claude/role-guides/`
+- Generates placeholder markdown for custom roles
+- Filters based on parent-level inheritance
+- Skips guides that already exist
+
+**Examples:**
+```bash
+# Add template guide
+/add-role-guides software-engineer-guide.md
+
+# Create custom guide
+/add-role-guides CUSTOM:platform-sre
+
+# Mix both
+/add-role-guides qa-engineer-guide.md CUSTOM:devops-lead
+```
+
+**When to use:** Adding roles as team grows, creating specialized custom roles, incrementally expanding role coverage
+
+---
+
 ### Agent: Role Guide Generator
 
 **Invoked by:** `/create-role-guide [role-name]`
@@ -173,6 +203,41 @@
 
 ---
 
+#### `/enhance-claude-md [flags] [file]`
+
+**Purpose:** Analyze and enhance existing CLAUDE.md files with intelligent suggestions
+
+**Flags:**
+- `--list` - List all enhancement suggestions without implementing
+- `--plan` - Generate detailed enhancement plan without making changes
+- (no flags) - Interactive enhancement session with claude-md-enhancer agent
+
+**File:** Optional path to CLAUDE.md file (default: ./CLAUDE.md)
+
+**What it does:**
+- Analyzes existing CLAUDE.md content and structure
+- Identifies missing or incomplete sections
+- Generates adaptive suggestions (2-3 for small files, 5-7 for large files)
+- Provides interactive guidance for implementing improvements
+- Preserves your original content and style
+
+**Example Usage:**
+```bash
+# List suggestions
+/enhance-claude-md --list
+
+# Generate detailed plan
+/enhance-claude-md --plan
+
+# Interactive enhancement
+/enhance-claude-md
+
+# Enhance specific file
+/enhance-claude-md ./backend/CLAUDE.md
+```
+
+---
+
 ### Agent: Document Generator
 
 **Invoked by:** `/generate-document`
@@ -187,6 +252,35 @@
 - Generates documents with appropriate structure
 - Places documents in correct location
 - Updates cross-references
+
+---
+
+### Agent: Claude.md Enhancer
+
+**Invoked by:** `/enhance-claude-md`
+
+**Purpose:** Enhance existing CLAUDE.md files with best-practice improvements
+
+**Capabilities:**
+- Analyzes existing CLAUDE.md structure and content
+- Loads enhancement suggestions from `.claude/claude-md-suggestions.json`
+- Prioritizes suggestions by impact (high, medium, low)
+- Gathers project-specific context from user
+- Drafts new sections with examples tailored to your project
+- Shows previews before applying changes
+- Implements approved enhancements incrementally
+- Preserves your original content and writing style
+
+**Adaptive Strategy:**
+- Small files (<100 lines): 2-3 high-level suggestions
+- Large files (≥100 lines): 5-7 detailed suggestions with examples
+
+**Common Enhancements:**
+- Mission Statement - Project purpose and goals
+- Capabilities Section - System features and architecture
+- Development Guidelines - Coding standards and practices
+- Tools and Dependencies - Tech stack documentation
+- Example Patterns - Code examples and common workflows
 
 ---
 
@@ -333,6 +427,7 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 | `/init-role-docs` | Reset to role guide defaults | `--reset` |
 | `/generate-document` | Generate documents from templates | `--auto` |
 | `/create-role-guide` | Create custom role guide | (none) |
+| `/enhance-claude-md` | Analyze and enhance existing CLAUDE.md files | `--list`, `--plan` |
 | `/validate-setup` | Validate .claude directory | `--quick`, `--fix`, `--silent`, `--quiet`, `--summary` |
 | `/sync-template` | Synchronize template updates | `--check-only`, `--quiet`, `--preview`, `--force` |
 
@@ -343,6 +438,7 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 | Template Setup Assistant | `/init-org-template` | Guide template selection and setup |
 | Role Guide Generator | `/create-role-guide` | Create custom role guides |
 | Document Generator | `/generate-document` | Generate organizational documents |
+| Claude.md Enhancer | `/enhance-claude-md` | Analyze and enhance existing CLAUDE.md files |
 | Framework Validator | `/validate-setup` | Validate .claude directory setup |
 | Template Sync | `/sync-template` | Synchronize template updates |
 

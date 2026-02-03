@@ -475,7 +475,17 @@ bash tests/test-hierarchical-initialization.sh
 
 ## Version History
 
-### v1.5.0 (Current) - Hierarchical Awareness
+### v1.6.0 (Current) - Selective Role Guide Initialization
+- Interactive role guide selection during template setup
+- Post-initialization role guide management (/add-role-guides command)
+- Custom role guide placeholder generation
+- Extended apply_template_with_mode() with 4th parameter for selection
+- CUSTOM:name syntax for creating specialized role guides
+- Comprehensive test suite with 23 tests for role guide selection
+- Updated template-setup-assistant agent with Section 3.6
+- Documentation updates across CHEATSHEET.md, init-org-template.md, CLAUDE.md
+
+### v1.5.0 - Hierarchical Awareness
 - Added hierarchy detection and validation
 - Extended organizational-level.json schema with parent references
 - Level-based role guide filtering
