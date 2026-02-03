@@ -14,11 +14,16 @@ This command helps users who don't yet have a `.claude` directory structure to s
 - You're setting up the plugin for the first time
 - You want to set up global default templates (use --global)
 - You want to set up project-specific templates (use --project)
+- Setting up a sub-level within an existing hierarchy (use --parent)
+- Want to ensure proper hierarchical relationships with parent .claude directories
+- Initializing a top-level .claude directory in a multi-level structure (use --root)
 
 ## Arguments
 
 - `--global`: Initialize template in global config (~/.claude/)
+- `--parent <path>`: Explicitly specify parent .claude directory for hierarchical setup
 - `--project`: Initialize template in project config (./.claude/)
+- `--root`: Mark this as top-level (no parent checking)
 - `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
 
 ## Instructions for Claude
@@ -98,6 +103,16 @@ When this command is executed, you should invoke the **template-setup-assistant 
 
 # Initialize project template (applies to ./.claude/)
 /init-org-template --project
+
+# Initialize as root/top-level (no parent checking)
+/init-org-template --root
+
+# Initialize with explicit parent hierarchy
+/init-org-template --parent /path/to/parent/.claude
+
+# Initialize sub-level inheriting from parent
+# (from within /company/system/product/ directory)
+/init-org-template --parent ../../.claude
 
 # Agent will present options like:
 # "Based on your project structure, I recommend the Startup Organization template.

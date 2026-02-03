@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-02-02T00:00:00Z",
+  "blueprint_source": "/home/practice-adam-brooks/.claude/plans/immutable-knitting-muffin.md",
+  "blueprint_hash": "ececc3520dc622e46a2774c333f408000a4908026185d705294179bb417f27f3",
+  "tasks_source": "/home/practice-adam-brooks/role-context-manager/tasks.json",
+  "tasks_hash": "54b1ec0924dc84c57888a52a94861e9b299503c27fe4a0c0c57dae092a299d4f",
+  "hash_algorithm": "sha256",
+  "thread_id": "immutable-knitting-muffin",
+  "total_tasks": 9,
+  "note": "This lock file enables change detection. Regenerate tasks.json if blueprint or tasks have been modified."
+}

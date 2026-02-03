@@ -43,6 +43,12 @@ This command performs comprehensive checks on your `.claude` directory, identifi
 
 # Validate specific scope
 /validate-setup --scope global
+
+# Migrate to extended hierarchy schema
+/validate-setup --migrate-hierarchy
+
+# Skip hierarchy validation (for basic schema setups)
+/validate-setup --skip-hierarchy
 ```
 
 ## Instructions for Claude
@@ -109,6 +115,8 @@ When this command is executed, invoke the **framework-validator agent** to perfo
    - Check for `--global` flag (validate only global config)
    - Check for `--project` flag (validate only project config)
    - Check for `--scope <value>` (validate specific scope)
+   - Check for `--migrate-hierarchy` flag (migrate to extended hierarchy schema)
+   - Check for `--skip-hierarchy` flag (skip hierarchy validation checks)
    - Extract any other parameters
 
    Determine scope:
@@ -142,6 +150,12 @@ When this command is executed, invoke the **framework-validator agent** to perfo
    If `--fix` flag present:
    - Add: 'After identifying issues, offer automated fixes for fixable problems. Get user approval before applying fixes.'
 
+   If `--migrate-hierarchy` flag present:
+   - Add: 'MIGRATION MODE: Migrate organizational-level.json from basic schema (level only) to extended schema with hierarchy support. Steps: 1) Scan filesystem for parent .claude directories using scripts/hierarchy-detector.sh, 2) Validate discovered parent-child relationships, 3) Add parent_claude_dir, parent_level, is_root, and hierarchy_path fields, 4) Preserve existing level and level_name, 5) Create backup before modification (.backup suffix), 6) Update all organizational-level.json files in hierarchy, 7) Re-validate after migration. Show clear before/after comparison and confirm changes.'
+
+   If `--skip-hierarchy` flag present:
+   - Add: 'Skip all hierarchy validation checks. Use when working with basic schema (no parent_claude_dir field) or standalone .claude directories. Only validate directory structure, JSON files, role guides, and references.'
+
 6. **The agent will**:
    - Determine which configs to validate based on scope parameter
    - For each config (global and/or project):
@@ -151,6 +165,14 @@ When this command is executed, invoke the **framework-validator agent** to perfo
      * Check reference integrity (roles, documents, templates)
      * Validate cross-references between files
      * Check template tracking if applied
+     * **Validate organizational hierarchy** (if extended schema detected):
+       - Verify `parent_claude_dir` path exists
+       - Validate parent-child level relationships using `is_valid_child_level()`
+       - Check `is_root` flag accuracy
+       - Verify `hierarchy_path` construction matches actual structure
+       - Detect invalid relationships (e.g., project containing system)
+       - Detect broken parent links
+       - Call `scripts/hierarchy-detector.sh` validation functions
    - If validating both scopes:
      * Validate global config (~/.claude/)
      * Validate project config (./.claude/)
@@ -334,13 +356,154 @@ When this command is executed, invoke the **framework-validator agent** to perfo
 - Role guides contain required sections
 - Configuration values are sensible
 
+### Hierarchy Validation (Extended Schema)
+
+When organizational hierarchy is configured (extended schema with `parent_claude_dir`), additional validation checks ensure the hierarchy is valid and consistent.
+
+**Hierarchy Structure Checks**:
+- `parent_claude_dir` path exists and is accessible
+- Parent directory contains valid `.claude` directory
+- Parent `organizational-level.json` is valid and readable
+- Parent-child level relationship follows organizational rules
+- `is_root` flag accuracy matches actual hierarchy position
+- `hierarchy_path` array correctly represents the full hierarchy chain
+- No circular references in hierarchy
+- No broken parent links
+
+**Validation Rules**:
+- **company** can contain: system, product, project
+- **system** can contain: product, project
+- **product** can contain: project only
+- **project** cannot have children
+
+The validator calls functions from `scripts/hierarchy-detector.sh`:
+- `is_valid_child_level()` - validate parent-child relationships
+- `get_nearest_parent()` - verify parent path exists
+- `build_hierarchy_path()` - validate hierarchy_path construction
+- `validate_hierarchy()` - comprehensive hierarchy validation
+
+**Example Hierarchy Validation Output**:
+
+```
+Hierarchy Validation:
+  ✓ Parent .claude directory exists at /company/system/.claude
+  ✓ Parent organizational-level.json is valid
+  ✓ Parent level (system) is valid for current level (product)
+  ✓ is_root flag correctly set to false
+  ✓ hierarchy_path matches actual structure: ["company", "system", "product"]
+  ✓ No circular references detected
+  ✓ Hierarchy chain is complete and valid
+
+Hierarchy Details:
+  Current: product (my-product)
+  Parent: system at /company/system/.claude
+  Root: company
+  Full path: company → system → product
+```
+
+**Invalid Hierarchy Examples**:
+
+```
+Hierarchy Validation:
+  ✗ Invalid parent-child relationship
+
+    What's wrong:
+      Current level is "system" but parent level is "product"
+      Product cannot contain system (invalid hierarchy)
+
+    Why it matters:
+      Violates organizational hierarchy rules.
+      May cause context loading issues or confusion.
+
+    How to fix:
+      Option 1: Change current level to "project" (valid child of product)
+      Option 2: Move this .claude directory to be child of system or company
+      Option 3: Remove parent_claude_dir to make this root
+
+    Root cause:
+      Incorrect level assignment or directory structure
+
+  ✗ Parent .claude directory not found
+
+    What's wrong:
+      parent_claude_dir is set to "/missing/path/.claude"
+      but this directory does not exist
+
+    Why it matters:
+      Cannot load parent context or validate hierarchy.
+      Broken reference will cause errors.
+
+    How to fix:
+      Option 1 (Automated): Update parent_claude_dir to actual parent
+      Option 2 (Automated): Remove parent_claude_dir (make this root)
+      Option 3 (Manual): Create parent .claude directory at expected path
+
+    Root cause:
+      Directory was moved or parent_claude_dir was set incorrectly
+
+  ⚠ is_root flag inconsistent with actual hierarchy
+
+    What's wrong:
+      is_root is set to true but parent_claude_dir is also set
+      These fields are contradictory
+
+    Why it matters:
+      Conflicting metadata causes confusion.
+      May affect hierarchy traversal logic.
+
+    How to fix:
+      Option 1 (Automated): Set is_root to false (has parent)
+      Option 2 (Automated): Remove parent_claude_dir (is root)
+
+    Root cause:
+      Manual edit created inconsistent state
+```
+
+**Migrating to Extended Hierarchy Schema**:
+
+If you have an existing setup with basic organizational-level.json (only `level` field) and want to add hierarchy support:
+
+```bash
+# Migrate to extended schema with hierarchy information
+/validate-setup --migrate-hierarchy
+
+# Agent will:
+# 1. Detect existing organizational-level.json files
+# 2. Search for parent .claude directories
+# 3. Validate parent-child relationships
+# 4. Add parent_claude_dir, is_root, and hierarchy_path fields
+# 5. Update all organizational-level.json files in hierarchy
+# 6. Validate the new hierarchy structure
+```
+
+The `--migrate-hierarchy` flag performs:
+- Scans filesystem for parent .claude directories
+- Validates discovered relationships
+- Adds extended schema fields automatically
+- Preserves existing level and level_name
+- Creates backup before modification
+- Re-validates after migration
+
+**Skip Hierarchy Validation**:
+
+If you're using the basic schema (no hierarchy) and want to skip hierarchy checks:
+
+```bash
+/validate-setup --skip-hierarchy
+```
+
+This is useful when:
+- Using single standalone .claude directory
+- Not using organizational hierarchy features
+- During initial setup before hierarchy is configured
+
 ## Issue Severity Levels
 
 **Critical** (✗ Red):
 - Blocks core functionality
 - Causes errors or failures
 - Must be fixed for system to work
-- Examples: Missing directories, invalid JSON, broken references
+- Examples: Missing directories, invalid JSON, broken references, invalid hierarchy
 
 **Warning** (⚠ Yellow):
 - Functionality works but not optimal

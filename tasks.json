@@ -1,307 +1,429 @@
 {
-  "$schema": "./task-schema.json",
   "version": "1.0",
-  "blueprint_source": "./WEAVER_BLUEPRINT.md",
-  "generated_at": "2026-01-23T10:30:00Z",
-  "thread_id": "auto-role-loading-verification",
+  "blueprint_source": "/home/practice-adam-brooks/.claude/plans/immutable-knitting-muffin.md",
+  "generated_at": "2026-02-02T00:00:00Z",
+  "thread_id": "immutable-knitting-muffin",
 
   "metadata": {
-    "total_tasks": 10,
-    "estimated_agent_loops": 10,
-    "critical_path": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10"],
+    "total_tasks": 9,
+    "estimated_agent_loops": 9,
+    "critical_path": ["T1", "T2", "T3", "T7", "T9"],
     "parallelizable_groups": [
-      ["V4", "V5", "V6"]
+      ["T4", "T5", "T6"],
+      ["T8"]
     ]
   },
 
   "tasks": [
     {
-      "id": "V1",
-      "name": "Verify command documentation exists and is complete",
-      "type": "verification",
-      "description": "Verify that commands/load-role-context.md exists and contains all required sections: purpose, usage, options, behavior, output modes, Claude instructions",
+      "id": "T1",
+      "name": "Create hierarchy-detector.sh script",
+      "type": "implementation",
+      "description": "Create new script with core hierarchy detection functions: find parent .claude directories, validate parent-child relationships, build hierarchy paths, and save extended organizational-level.json format",
       "priority": 1,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 154,
-        "concerns": ["documentation-verification"],
-        "within_limits": true
+        "estimated_lines": 400,
+        "concerns": ["hierarchy-detection"],
+        "within_limits": true,
+        "note": "Single file with related functions, exceeds line limit but single concern"
       },
 
       "target_files": [
         {
-          "path": "commands/load-role-context.md",
-          "action": "READ",
-          "purpose": "Verify command documentation completeness"
+          "path": "scripts/hierarchy-detector.sh",
+          "action": "CREATE",
+          "purpose": "Core hierarchy detection and validation logic"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "commands/load-role-context.md"
+          "scripts/hierarchy-detector.sh"
         ],
         "dependencies": [],
         "exemplars": [
           {
-            "path": "commands/show-role-context.md",
-            "reason": "Shows existing command documentation pattern"
+            "path": "scripts/level-detector.sh",
+            "reason": "Shows existing bash script patterns and JSON handling"
+          },
+          {
+            "path": "scripts/role-manager.sh",
+            "reason": "Shows find_claude_dir_upward pattern to replicate"
           }
         ],
         "test_utilities": [],
-        "total_files": 2,
-        "estimated_tokens": 3000
+        "total_files": 3,
+        "estimated_tokens": 5000
       },
 
       "constraints": [
         {
-          "rule": "Must document all three output modes (--quiet, normal, --verbose)",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "### Options: --quiet, --verbose"
+          "rule": "Use jq for JSON parsing and generation",
+          "source": "scripts/level-detector.sh",
+          "example": "jq -r '.level' \"$organizational_level_file\""
         },
         {
-          "rule": "Must explain multi-scope hierarchy",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "Project role overrides global role"
+          "rule": "Follow existing error handling patterns",
+          "source": "scripts/level-detector.sh",
+          "example": "echo \"Error: ...\" >&2; return 1"
         },
         {
-          "rule": "Must document SessionStart hook integration",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "hooks.SessionStart configuration examples"
+          "rule": "Make functions reusable with clear inputs/outputs",
+          "source": "scripts/role-manager.sh",
+          "example": "find_claude_dir_upward() returns path or empty string"
         }
       ],
 
       "validation": {
-        "command": "test -f commands/load-role-context.md && grep -q '## Purpose' commands/load-role-context.md && grep -q '## Usage' commands/load-role-context.md && grep -q -- '--quiet' commands/load-role-context.md && grep -q -- '--verbose' commands/load-role-context.md && grep -q 'Multi-Scope' commands/load-role-context.md && grep -q 'SessionStart' commands/load-role-context.md",
-        "expected_outcome": "All required sections and flags are documented",
-        "timeout_seconds": 30,
+        "command": "bash -n scripts/hierarchy-detector.sh",
+        "expected_outcome": "Bash syntax check passes with no errors",
+        "timeout_seconds": 10,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
           "type": "file_exists",
-          "path": "commands/load-role-context.md"
-        },
-        {
-          "type": "content_contains",
-          "file": "commands/load-role-context.md",
-          "patterns": ["## Purpose", "## Usage", "--quiet", "--verbose", "Multi-Scope", "SessionStart"]
+          "path": "scripts/hierarchy-detector.sh"
         },
         {
           "type": "command_succeeds",
-          "command": "test -f commands/load-role-context.md"
+          "command": "bash -n scripts/hierarchy-detector.sh"
+        },
+        {
+          "type": "function_exists",
+          "file": "scripts/hierarchy-detector.sh",
+          "functions": [
+            "find_parent_claude_dirs",
+            "get_nearest_parent",
+            "read_level_from_claude_dir",
+            "build_hierarchy_path",
+            "is_valid_child_level",
+            "save_level_with_hierarchy"
+          ]
         }
       ],
 
       "dependencies": {
         "depends_on": [],
-        "blocks": ["V2", "V7"]
+        "blocks": ["T2", "T3", "T7", "T8", "T9"]
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "json-processing", "file-system-operations"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["scripts/hierarchy-detector.sh"],
+        "files_to_restore": []
       }
     },
 
     {
-      "id": "V2",
-      "name": "Verify cmd_load_role_context function implementation",
-      "type": "verification",
-      "description": "Verify that scripts/role-manager.sh contains cmd_load_role_context() function with all 11 logic flow steps from the plan",
+      "id": "T2",
+      "name": "Update level-detector.sh with hierarchy awareness",
+      "type": "implementation",
+      "description": "Modify level-detector.sh to source hierarchy-detector.sh, update prompt_user_for_level() to detect and display parent context, and replace save_level() to call save_level_with_hierarchy()",
       "priority": 2,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 174,
-        "concerns": ["function-verification"],
+        "estimated_lines": 80,
+        "concerns": ["parent-aware-level-detection"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "scripts/role-manager.sh",
-          "action": "READ",
-          "purpose": "Verify function implementation completeness"
+          "path": "scripts/level-detector.sh",
+          "action": "MODIFY",
+          "purpose": "Add hierarchy awareness to level detection and prompting"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "scripts/role-manager.sh"
+          "scripts/level-detector.sh"
         ],
-        "dependencies": [],
-        "exemplars": [
-          {
-            "path": "docs/IMPLEMENTATION-PLAN-AUTO-ROLE-LOADING.md",
-            "reason": "Contains the 11 logic flow steps to verify"
-          }
+        "dependencies": [
+          "scripts/hierarchy-detector.sh"
         ],
+        "exemplars": [],
         "test_utilities": [],
         "total_files": 2,
-        "estimated_tokens": 5000
+        "estimated_tokens": 3500
       },
 
       "constraints": [
         {
-          "rule": "Function must parse three modes: quiet, normal, verbose",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "case \"$1\" in --quiet|--verbose)"
+          "rule": "Source hierarchy-detector.sh at top of file after existing sources",
+          "source": "scripts/level-detector.sh",
+          "example": "source \"$SCRIPT_DIR/hierarchy-detector.sh\" 2>/dev/null || true"
         },
         {
-          "rule": "Must use get_effective_config_dir()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "config_dir=\"$(get_effective_config_dir)\""
+          "rule": "Preserve existing function signatures and behavior when no parent exists",
+          "source": "scripts/level-detector.sh",
+          "example": "Ensure backward compatibility - old behavior when no hierarchy-detector"
         },
         {
-          "rule": "Must use extract_document_references()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "doc_refs_json=\"$(extract_document_references \"$role_guide\")\""
-        },
-        {
-          "rule": "Must always exit with code 0 (never block)",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "exit 0"
+          "rule": "Update prompt_user_for_level() to show parent context",
+          "source": "Plan Phase 3",
+          "example": "Display: 'Detected parent organizational level: product'"
         }
       ],
 
       "validation": {
-        "command": "grep -q 'cmd_load_role_context()' scripts/role-manager.sh && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_effective_config_dir' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_preference' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'extract_document_references' && grep -q 'load|load-role-context)' scripts/role-manager.sh",
-        "expected_outcome": "Function exists with all required helper function calls and dispatcher entry",
+        "command": "bash -n scripts/level-detector.sh && bash scripts/level-detector.sh detect",
+        "expected_outcome": "Bash syntax check passes and detect command runs without errors",
         "timeout_seconds": 30,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "cmd_load_role_context"
-        },
-        {
-          "type": "content_contains",
-          "file": "scripts/role-manager.sh",
-          "patterns": ["cmd_load_role_context()", "get_effective_config_dir", "get_preference", "extract_document_references", "load|load-role-context)"]
+          "type": "file_modified",
+          "path": "scripts/level-detector.sh"
         },
         {
           "type": "command_succeeds",
-          "command": "bash -n scripts/role-manager.sh"
+          "command": "bash -n scripts/level-detector.sh"
+        },
+        {
+          "type": "grep_match",
+          "file": "scripts/level-detector.sh",
+          "pattern": "hierarchy-detector.sh"
         }
       ],
 
       "dependencies": {
-        "depends_on": ["V1"],
-        "blocks": ["V7"]
+        "depends_on": ["T1"],
+        "blocks": ["T9"]
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "code-modification"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["scripts/level-detector.sh"]
       }
     },
 
     {
-      "id": "V3",
-      "name": "Verify SessionStart hook configuration",
-      "type": "verification",
-      "description": "Verify that scripts/post-install.sh configures SessionStart hook with all three commands in correct order: validate, sync, load-role-context",
+      "id": "T3",
+      "name": "Update template-setup-assistant with context detection",
+      "type": "implementation",
+      "description": "Add section 2.5 'Detect Organizational Context' to template-setup-assistant agent that executes hierarchy-detector.sh and prompts user about parent structure",
       "priority": 3,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["hook-configuration"],
+        "estimated_lines": 60,
+        "concerns": ["organizational-context-prompting"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "scripts/post-install.sh",
-          "action": "READ",
-          "purpose": "Verify hook configuration"
+          "path": "agents/template-setup-assistant/agent.md",
+          "action": "MODIFY",
+          "purpose": "Add organizational context detection step to template setup workflow"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "scripts/post-install.sh"
+          "agents/template-setup-assistant/agent.md"
         ],
-        "dependencies": [],
+        "dependencies": [
+          "scripts/hierarchy-detector.sh"
+        ],
         "exemplars": [],
         "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 1500
+        "total_files": 2,
+        "estimated_tokens": 4500
       },
 
       "constraints": [
         {
-          "rule": "Must include /load-role-context --quiet as third command",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "\"/load-role-context --quiet\""
+          "rule": "Insert new section 2.5 after existing section 2 content",
+          "source": "Plan Phase 4",
+          "example": "Add after line 100 in agent workflow"
         },
         {
-          "rule": "Hook order: validate → sync → load",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "[\"/validate-setup --quiet\", \"/sync-template --check-only\", \"/load-role-context --quiet\"]"
+          "rule": "Use existing agent prompt formatting style",
+          "source": "agents/template-setup-assistant/agent.md",
+          "example": "Match heading levels, code block formatting, step numbering"
+        },
+        {
+          "rule": "Call hierarchy-detector.sh functions via bash commands",
+          "source": "Plan Phase 4",
+          "example": "bash $PLUGIN_DIR/scripts/hierarchy-detector.sh find-parents"
         }
       ],
 
       "validation": {
-        "command": "grep -A 3 'hooks.SessionStart' scripts/post-install.sh | grep -q '/load-role-context --quiet' && grep -B 1 '/load-role-context --quiet' scripts/post-install.sh | grep -q '/sync-template --check-only'",
-        "expected_outcome": "Hook configuration includes load-role-context as third command",
-        "timeout_seconds": 30,
+        "command": "grep -q '2.5.*Detect Organizational Context' agents/template-setup-assistant/agent.md",
+        "expected_outcome": "New section 2.5 exists in agent file",
+        "timeout_seconds": 10,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "content_contains",
-          "file": "scripts/post-install.sh",
-          "patterns": ["/load-role-context --quiet", "hooks.SessionStart"]
+          "type": "file_modified",
+          "path": "agents/template-setup-assistant/agent.md"
         },
         {
-          "type": "command_succeeds",
-          "command": "bash -n scripts/post-install.sh"
+          "type": "grep_match",
+          "file": "agents/template-setup-assistant/agent.md",
+          "pattern": "Detect Organizational Context"
+        },
+        {
+          "type": "grep_match",
+          "file": "agents/template-setup-assistant/agent.md",
+          "pattern": "hierarchy-detector.sh"
         }
       ],
 
       "dependencies": {
-        "depends_on": [],
-        "blocks": ["V7"]
+        "depends_on": ["T1"],
+        "blocks": ["T9"]
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["markdown", "agent-prompts"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["agents/template-setup-assistant/agent.md"]
       }
     },
 
     {
-      "id": "V4",
-      "name": "Verify setup-plugin-hooks.md documentation updates",
-      "type": "verification",
-      "description": "Verify that commands/setup-plugin-hooks.md includes load-role-context in all hook examples (minimal, standard, verbose)",
+      "id": "T4",
+      "name": "Update init-org-template command documentation",
+      "type": "implementation",
+      "description": "Add --root and --parent flags to init-org-template command, update documentation to include hierarchical setup scenarios",
       "priority": 4,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 100,
-        "concerns": ["documentation-verification"],
+        "estimated_lines": 40,
+        "concerns": ["command-documentation"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "commands/setup-plugin-hooks.md",
-          "action": "READ",
-          "purpose": "Verify hook documentation completeness"
+          "path": "commands/init-org-template.md",
+          "action": "MODIFY",
+          "purpose": "Document new hierarchy-aware flags and use cases"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "commands/setup-plugin-hooks.md"
+          "commands/init-org-template.md"
+        ],
+        "dependencies": [],
+        "exemplars": [
+          {
+            "path": "commands/set-org-level.md",
+            "reason": "Shows flag documentation format"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 2500
+      },
+
+      "constraints": [
+        {
+          "rule": "Follow existing command documentation structure",
+          "source": "commands/init-org-template.md",
+          "example": "Use ## Arguments, ## Examples sections"
+        },
+        {
+          "rule": "Add flags in alphabetical order",
+          "source": "commands/set-org-level.md",
+          "example": "--parent comes before --root"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q '\\-\\-root' commands/init-org-template.md && grep -q '\\-\\-parent' commands/init-org-template.md",
+        "expected_outcome": "Both --root and --parent flags documented",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_modified",
+          "path": "commands/init-org-template.md"
+        },
+        {
+          "type": "grep_match",
+          "file": "commands/init-org-template.md",
+          "pattern": "--root"
+        },
+        {
+          "type": "grep_match",
+          "file": "commands/init-org-template.md",
+          "pattern": "--parent"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["markdown", "documentation"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["commands/init-org-template.md"]
+      }
+    },
+
+    {
+      "id": "T5",
+      "name": "Update set-org-level command documentation",
+      "type": "implementation",
+      "description": "Add --update-parent, --root, and --parent flags to set-org-level command, document new organizational-level.json schema with hierarchy fields",
+      "priority": 4,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 50,
+        "concerns": ["command-documentation"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "commands/set-org-level.md",
+          "action": "MODIFY",
+          "purpose": "Document hierarchy flags and extended schema"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "commands/set-org-level.md"
         ],
         "dependencies": [],
         "exemplars": [],
@@ -312,38 +434,38 @@
 
       "constraints": [
         {
-          "rule": "Minimal config must include /load-role-context --quiet",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Minimal configuration example"
+          "rule": "Follow existing command documentation structure",
+          "source": "commands/set-org-level.md",
+          "example": "Use existing ## sections and formatting"
         },
         {
-          "rule": "Standard config must include all three commands",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Standard configuration (recommended)"
-        },
-        {
-          "rule": "Verbose config must include /load-role-context --verbose",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Verbose configuration"
+          "rule": "Document new JSON schema fields",
+          "source": "Plan Phase 5",
+          "example": "Show parent_claude_dir, parent_level, is_root, hierarchy_path"
         }
       ],
 
       "validation": {
-        "command": "grep -c '/load-role-context' commands/setup-plugin-hooks.md | awk '$1 >= 3 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 3 occurrences of /load-role-context in different configurations",
-        "timeout_seconds": 30,
+        "command": "grep -q '\\-\\-update-parent' commands/set-org-level.md && grep -q 'hierarchy_path' commands/set-org-level.md",
+        "expected_outcome": "New flags and schema fields documented",
+        "timeout_seconds": 10,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "content_contains",
-          "file": "commands/setup-plugin-hooks.md",
-          "patterns": ["/load-role-context --quiet", "/load-role-context --verbose"]
+          "type": "file_modified",
+          "path": "commands/set-org-level.md"
         },
         {
-          "type": "command_succeeds",
-          "command": "test -f commands/setup-plugin-hooks.md"
+          "type": "grep_match",
+          "file": "commands/set-org-level.md",
+          "pattern": "--update-parent"
+        },
+        {
+          "type": "grep_match",
+          "file": "commands/set-org-level.md",
+          "pattern": "hierarchy_path"
         }
       ],
 
@@ -353,528 +475,413 @@
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["markdown", "documentation"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["commands/set-org-level.md"]
       }
     },
 
     {
-      "id": "V5",
-      "name": "Verify README.md documentation updates",
-      "type": "verification",
-      "description": "Verify that README.md documents /load-role-context command with usage, options, behavior, and hook integration",
-      "priority": 4,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 200,
-        "concerns": ["documentation-verification"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "README.md",
-          "action": "READ",
-          "purpose": "Verify main documentation completeness"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "README.md"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 8000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must document /load-role-context command",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "### `/load-role-context [--quiet|--verbose]`"
-        },
-        {
-          "rule": "Must list in SessionStart hook section",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "3. **Role context loading**"
-        },
-        {
-          "rule": "Hook examples must include the command",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "\"/load-role-context --quiet\""
-        }
-      ],
-
-      "validation": {
-        "command": "grep -q '/load-role-context' README.md && grep -c '/load-role-context' README.md | awk '$1 >= 5 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 5 references to /load-role-context throughout README",
-        "timeout_seconds": 30,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "content_contains",
-          "file": "README.md",
-          "patterns": ["/load-role-context", "### `/load-role-context", "Role context loading"]
-        },
-        {
-          "type": "command_succeeds",
-          "command": "test -f README.md"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": [],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
-      }
-    },
-
-    {
-      "id": "V6",
-      "name": "Verify CHEATSHEET.md documentation updates",
-      "type": "verification",
-      "description": "Verify that CHEATSHEET.md includes /load-role-context command in commands table and hook examples",
-      "priority": 4,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["documentation-verification"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "CHEATSHEET.md",
-          "action": "READ",
-          "purpose": "Verify cheatsheet completeness"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "CHEATSHEET.md"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must include command in commands table",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "| `/load-role-context` | Load role guide and documents | `--quiet`, `--verbose` |"
-        },
-        {
-          "rule": "Must include in hook examples",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "\"/load-role-context --quiet\""
-        }
-      ],
-
-      "validation": {
-        "command": "grep -q 'load-role-context' CHEATSHEET.md && grep -c 'load-role-context' CHEATSHEET.md | awk '$1 >= 2 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 2 references to load-role-context in cheatsheet",
-        "timeout_seconds": 30,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "content_contains",
-          "file": "CHEATSHEET.md",
-          "patterns": ["load-role-context"]
-        },
-        {
-          "type": "command_succeeds",
-          "command": "test -f CHEATSHEET.md"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": [],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
-      }
-    },
-
-    {
-      "id": "V7",
-      "name": "Test command execution in all three modes",
-      "type": "functional-test",
-      "description": "Execute /load-role-context in quiet, normal, and verbose modes to verify all output formats work correctly",
+      "id": "T6",
+      "name": "Add hierarchy validation to validate-setup",
+      "type": "implementation",
+      "description": "Add hierarchy validation checks to validate-setup command: verify parent_claude_dir exists, validate parent-child relationships, check is_root accuracy, detect invalid configurations",
       "priority": 5,
 
       "atomicity": {
-        "file_count": 2,
-        "estimated_lines": 50,
-        "concerns": ["functional-testing"],
+        "file_count": 1,
+        "estimated_lines": 80,
+        "concerns": ["hierarchy-validation"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test command execution"
-        },
-        {
-          "path": "commands/load-role-context.md",
-          "action": "READ",
-          "purpose": "Reference for expected behavior"
+          "path": "commands/validate-setup.md",
+          "action": "MODIFY",
+          "purpose": "Add hierarchy validation checks to setup validation"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "scripts/role-manager.sh",
-          "commands/load-role-context.md"
+          "commands/validate-setup.md"
         ],
         "dependencies": [
-          ".claude/preferences.json"
+          "scripts/hierarchy-detector.sh"
         ],
         "exemplars": [],
         "test_utilities": [],
-        "total_files": 3,
-        "estimated_tokens": 4000
-      },
-
-      "constraints": [
-        {
-          "rule": "Quiet mode must output single line",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "✓ Role context loaded: {role-name} ({count} documents)"
-        },
-        {
-          "rule": "Normal mode must include context wrapper",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "=== ROLE CONTEXT LOADED ==="
-        },
-        {
-          "rule": "Verbose mode must include metadata",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "Scope: project or global"
-        },
-        {
-          "rule": "All modes must exit with code 0",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "exit 0"
-        }
-      ],
-
-      "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet > /tmp/quiet_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context > /tmp/normal_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context --verbose > /tmp/verbose_test.txt 2>&1 && test $? -eq 0 && grep -q '✓ Role context loaded' /tmp/quiet_test.txt && grep -q '=== ROLE CONTEXT LOADED ===' /tmp/normal_test.txt && grep -q 'Scope:' /tmp/verbose_test.txt",
-        "expected_outcome": "All three modes execute successfully with correct output format",
-        "timeout_seconds": 60,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet"
-        },
-        {
-          "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context"
-        },
-        {
-          "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context --verbose"
-        },
-        {
-          "type": "exit_code_equals",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_code": 0
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": ["V1", "V2", "V3"],
-        "blocks": ["V8", "V9"]
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "output-validation"]
-      }
-    },
-
-    {
-      "id": "V8",
-      "name": "Test graceful degradation (no role set)",
-      "type": "edge-case-test",
-      "description": "Test that command exits silently (code 0) when no role is set in preferences",
-      "priority": 6,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 20,
-        "concerns": ["edge-case-testing"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test edge case behavior"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must exit with code 0 when no role set",
-          "source": "WEAVER_BLUEPRINT.md section 5",
-          "example": "if [[ -z \"$current_role\" ]]; then exit 0; fi"
-        },
-        {
-          "rule": "Must be silent (no error output)",
-          "source": "WEAVER_BLUEPRINT.md section 5",
-          "example": "Silent exit in quiet mode"
-        }
-      ],
-
-      "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && temp_pref=$(mktemp) && cp .claude/preferences.json \"$temp_pref\" && jq 'del(.user_role)' .claude/preferences.json > .claude/preferences.json.tmp && mv .claude/preferences.json.tmp .claude/preferences.json && bash scripts/role-manager.sh load-role-context --quiet > /tmp/no_role_test.txt 2>&1; exit_code=$?; mv \"$temp_pref\" .claude/preferences.json; test $exit_code -eq 0",
-        "expected_outcome": "Command exits with code 0 and produces no error output when no role is set",
-        "timeout_seconds": 60,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "exit_code_equals",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_code": 0
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": ["V7"],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "edge-case-testing"]
-      }
-    },
-
-    {
-      "id": "V9",
-      "name": "Test document reference extraction and loading",
-      "type": "functional-test",
-      "description": "Verify that extract_document_references() function is called and documents are loaded from role guide",
-      "priority": 7,
-
-      "atomicity": {
-        "file_count": 2,
-        "estimated_lines": 50,
-        "concerns": ["functional-testing"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test document loading"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
+        "total_files": 2,
         "estimated_tokens": 3000
       },
 
       "constraints": [
         {
-          "rule": "Must call extract_document_references()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "extract_document_references \"$role_guide\""
+          "rule": "Follow existing validation check format",
+          "source": "commands/validate-setup.md",
+          "example": "Use ✓ for pass, ⚠ for warnings, ✗ for errors"
         },
         {
-          "rule": "Must load documents and count them",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "loaded_count variable"
+          "rule": "Call hierarchy-detector.sh validation functions",
+          "source": "scripts/hierarchy-detector.sh",
+          "example": "Use is_valid_child_level() to validate relationships"
         },
         {
-          "rule": "Must display document count in output",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "({count} documents)"
+          "rule": "Add --migrate-hierarchy flag for migration",
+          "source": "Plan Phase 6",
+          "example": "/validate-setup --migrate-hierarchy"
         }
       ],
 
       "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet 2>&1 | grep -q 'documents)' && bash scripts/role-manager.sh load-role-context --verbose 2>&1 | grep -q 'Documents loaded:'",
-        "expected_outcome": "Output shows document count, indicating documents were extracted and loaded",
+        "command": "grep -q 'Hierarchy Validation' commands/validate-setup.md",
+        "expected_outcome": "Hierarchy validation section added",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_modified",
+          "path": "commands/validate-setup.md"
+        },
+        {
+          "type": "grep_match",
+          "file": "commands/validate-setup.md",
+          "pattern": "Hierarchy Validation"
+        },
+        {
+          "type": "grep_match",
+          "file": "commands/validate-setup.md",
+          "pattern": "parent_claude_dir"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": [],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["markdown", "validation-logic"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["commands/validate-setup.md"]
+      }
+    },
+
+    {
+      "id": "T7",
+      "name": "Update template-manager with level-based filtering",
+      "type": "implementation",
+      "description": "Modify apply_template_with_mode() in template-manager.sh to check parent context and filter role guides based on organizational level",
+      "priority": 6,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 60,
+        "concerns": ["template-filtering"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/template-manager.sh",
+          "action": "MODIFY",
+          "purpose": "Filter role guides by organizational level during template application"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/template-manager.sh"
+        ],
+        "dependencies": [
+          "scripts/hierarchy-detector.sh"
+        ],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 4000
+      },
+
+      "constraints": [
+        {
+          "rule": "Update apply_template_with_mode() function around lines 462-587",
+          "source": "Plan Phase 7",
+          "example": "Add parent detection at start of function"
+        },
+        {
+          "rule": "Use hierarchy-detector.sh to get parent context",
+          "source": "scripts/hierarchy-detector.sh",
+          "example": "Call get_nearest_parent() and get_parent_level()"
+        },
+        {
+          "rule": "Skip copying parent-level role guides when parent exists",
+          "source": "Plan Phase 7",
+          "example": "If project under product, skip product/system/company roles"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n scripts/template-manager.sh",
+        "expected_outcome": "Bash syntax check passes",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_modified",
+          "path": "scripts/template-manager.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/template-manager.sh"
+        },
+        {
+          "type": "grep_match",
+          "file": "scripts/template-manager.sh",
+          "pattern": "get_nearest_parent\\|get_parent_level"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1"],
+        "blocks": ["T9"]
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "template-filtering"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["scripts/template-manager.sh"]
+      }
+    },
+
+    {
+      "id": "T8",
+      "name": "Create unit tests for hierarchy-detector",
+      "type": "test",
+      "description": "Create test-hierarchy-detector.sh with unit tests for all hierarchy detection functions, and create test fixtures in tests/fixtures/hierarchical/",
+      "priority": 7,
+
+      "atomicity": {
+        "file_count": 5,
+        "estimated_lines": 250,
+        "concerns": ["unit-testing"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "tests/test-hierarchy-detector.sh",
+          "action": "CREATE",
+          "purpose": "Unit tests for hierarchy detection functions"
+        },
+        {
+          "path": "tests/fixtures/hierarchical/company/.claude/organizational-level.json",
+          "action": "CREATE",
+          "purpose": "Test fixture for company level"
+        },
+        {
+          "path": "tests/fixtures/hierarchical/company/product/.claude/organizational-level.json",
+          "action": "CREATE",
+          "purpose": "Test fixture for product level"
+        },
+        {
+          "path": "tests/fixtures/hierarchical/company/product/project/.claude/organizational-level.json",
+          "action": "CREATE",
+          "purpose": "Test fixture for project level"
+        },
+        {
+          "path": "tests/fixtures/hierarchical/invalid/project/.claude/organizational-level.json",
+          "action": "CREATE",
+          "purpose": "Test fixture for invalid hierarchy (project → system)"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "tests/test-hierarchy-detector.sh"
+        ],
+        "dependencies": [
+          "scripts/hierarchy-detector.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "tests/test-claude-md-preservation.sh",
+            "reason": "Shows existing test script patterns"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 3,
+        "estimated_tokens": 3500
+      },
+
+      "constraints": [
+        {
+          "rule": "Follow existing test script structure",
+          "source": "tests/test-claude-md-preservation.sh",
+          "example": "Use setup/teardown, assert functions, test naming"
+        },
+        {
+          "rule": "Test all functions from hierarchy-detector.sh",
+          "source": "Plan Testing Strategy",
+          "example": "Test find_parent_claude_dirs, get_nearest_parent, is_valid_child_level, etc."
+        },
+        {
+          "rule": "Create realistic test fixtures",
+          "source": "Plan Testing Strategy",
+          "example": "Three-level, four-level, and invalid hierarchies"
+        }
+      ],
+
+      "validation": {
+        "command": "bash tests/test-hierarchy-detector.sh",
+        "expected_outcome": "All unit tests pass",
         "timeout_seconds": 60,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "command_output_contains",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_pattern": "documents)"
+          "type": "file_exists",
+          "path": "tests/test-hierarchy-detector.sh"
         },
         {
-          "type": "command_output_contains",
-          "command": "bash scripts/role-manager.sh load-role-context --verbose",
-          "expected_pattern": "Documents loaded:"
+          "type": "command_succeeds",
+          "command": "bash -n tests/test-hierarchy-detector.sh"
+        },
+        {
+          "type": "directory_exists",
+          "path": "tests/fixtures/hierarchical"
         }
       ],
 
       "dependencies": {
-        "depends_on": ["V7"],
+        "depends_on": ["T1"],
         "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "output-validation"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "testing", "fixtures"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": [
+          "tests/test-hierarchy-detector.sh",
+          "tests/fixtures/hierarchical"
+        ],
+        "files_to_restore": []
       }
     },
 
     {
-      "id": "V10",
-      "name": "Verify helper function dependencies exist",
-      "type": "verification",
-      "description": "Verify that all required helper functions exist in role-manager.sh: get_effective_config_dir, get_preference, get_role_guide_path, extract_document_references, resolve_document_path",
+      "id": "T9",
+      "name": "Create integration tests for hierarchical initialization",
+      "type": "test",
+      "description": "Create test-hierarchical-initialization.sh with end-to-end tests for initialization at each level, validation, and error detection",
       "priority": 8,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["dependency-verification"],
+        "estimated_lines": 200,
+        "concerns": ["integration-testing"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "scripts/role-manager.sh",
-          "action": "READ",
-          "purpose": "Verify helper function existence"
+          "path": "tests/test-hierarchical-initialization.sh",
+          "action": "CREATE",
+          "purpose": "Integration tests for hierarchical initialization workflow"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "scripts/role-manager.sh"
+          "tests/test-hierarchical-initialization.sh"
         ],
-        "dependencies": [],
-        "exemplars": [],
+        "dependencies": [
+          "scripts/hierarchy-detector.sh",
+          "scripts/level-detector.sh",
+          "scripts/template-manager.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "tests/test-claude-md-preservation.sh",
+            "reason": "Shows integration test patterns"
+          }
+        ],
         "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
+        "total_files": 5,
+        "estimated_tokens": 5000
       },
 
       "constraints": [
         {
-          "rule": "Must have get_effective_config_dir function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_effective_config_dir()"
+          "rule": "Test complete initialization workflows",
+          "source": "Plan Verification section",
+          "example": "Test company → product → project initialization sequence"
         },
         {
-          "rule": "Must have get_preference function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_preference()"
+          "rule": "Test validation and error cases",
+          "source": "Plan Verification section",
+          "example": "Test invalid parent-child relationships are rejected"
         },
         {
-          "rule": "Must have get_role_guide_path function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_role_guide_path()"
-        },
-        {
-          "rule": "Must have extract_document_references function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "extract_document_references()"
-        },
-        {
-          "rule": "Must have resolve_document_path function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "resolve_document_path()"
+          "rule": "Test backward compatibility",
+          "source": "Plan Verification section",
+          "example": "Old format organizational-level.json still works"
         }
       ],
 
       "validation": {
-        "command": "grep -q '^get_effective_config_dir()' scripts/role-manager.sh && grep -q '^get_preference()' scripts/role-manager.sh && grep -q '^get_role_guide_path()' scripts/role-manager.sh && grep -q '^extract_document_references()' scripts/role-manager.sh && grep -q '^resolve_document_path()' scripts/role-manager.sh",
-        "expected_outcome": "All five required helper functions exist in the script",
-        "timeout_seconds": 30,
+        "command": "bash tests/test-hierarchical-initialization.sh",
+        "expected_outcome": "All integration tests pass",
+        "timeout_seconds": 120,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_effective_config_dir"
+          "type": "file_exists",
+          "path": "tests/test-hierarchical-initialization.sh"
         },
         {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_preference"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_role_guide_path"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "extract_document_references"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "resolve_document_path"
+          "type": "command_succeeds",
+          "command": "bash -n tests/test-hierarchical-initialization.sh"
         }
       ],
 
       "dependencies": {
-        "depends_on": [],
-        "blocks": ["V7"]
+        "depends_on": ["T1", "T2", "T3", "T7"],
+        "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "integration-testing", "workflow-testing"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["tests/test-hierarchical-initialization.sh"],
+        "files_to_restore": []
       }
     }
   ],
@@ -883,12 +890,15 @@
     "all_tasks_have_validation": true,
     "test_first_tasks": [],
     "validation_commands": [
-      "test -f commands/load-role-context.md",
-      "grep -q 'cmd_load_role_context()' scripts/role-manager.sh",
-      "grep -q '/load-role-context --quiet' scripts/post-install.sh",
-      "bash scripts/role-manager.sh load-role-context --quiet",
-      "bash scripts/role-manager.sh load-role-context",
-      "bash scripts/role-manager.sh load-role-context --verbose"
+      "bash -n scripts/hierarchy-detector.sh",
+      "bash -n scripts/level-detector.sh",
+      "grep -q 'Detect Organizational Context' agents/template-setup-assistant/agent.md",
+      "grep -q '\\-\\-root' commands/init-org-template.md",
+      "grep -q '\\-\\-update-parent' commands/set-org-level.md",
+      "grep -q 'Hierarchy Validation' commands/validate-setup.md",
+      "bash -n scripts/template-manager.sh",
+      "bash tests/test-hierarchy-detector.sh",
+      "bash tests/test-hierarchical-initialization.sh"
     ]
   },
 
@@ -896,36 +906,34 @@
     "phases": [
       {
         "phase": 1,
-        "name": "Static Documentation Verification",
-        "tasks": ["V1", "V10"],
-        "parallel": true
+        "name": "Foundation",
+        "tasks": ["T1"],
+        "parallel": false,
+        "description": "Create core hierarchy detection script"
       },
       {
         "phase": 2,
-        "name": "Implementation Verification",
-        "tasks": ["V2", "V3"],
-        "parallel": true
+        "name": "Integration",
+        "tasks": ["T2", "T3", "T7"],
+        "parallel": false,
+        "description": "Integrate hierarchy detection into existing scripts"
       },
       {
         "phase": 3,
-        "name": "Documentation Completeness",
-        "tasks": ["V4", "V5", "V6"],
-        "parallel": true
+        "name": "Documentation",
+        "tasks": ["T4", "T5", "T6"],
+        "parallel": true,
+        "description": "Update command documentation and validation"
       },
       {
         "phase": 4,
-        "name": "Functional Testing",
-        "tasks": ["V7"],
-        "parallel": false
-      },
-      {
-        "phase": 5,
-        "name": "Edge Case and Integration Testing",
-        "tasks": ["V8", "V9"],
-        "parallel": true
+        "name": "Testing",
+        "tasks": ["T8", "T9"],
+        "parallel": false,
+        "description": "Create comprehensive test coverage"
       }
     ],
-    "estimated_total_loops": 10,
-    "checkpoint_after": ["V3", "V6", "V7", "V9"]
+    "estimated_total_loops": 9,
+    "checkpoint_after": ["T1", "T3", "T6", "T9"]
   }
 }

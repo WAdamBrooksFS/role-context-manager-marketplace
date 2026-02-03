@@ -10,6 +10,12 @@ PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATES_DIR="$PLUGIN_DIR/templates"
 REGISTRY_FILE="$TEMPLATES_DIR/registry.json"
 
+# Source hierarchy detection functions
+HIERARCHY_DETECTOR="$PLUGIN_DIR/scripts/hierarchy-detector.sh"
+if [ -f "$HIERARCHY_DETECTOR" ]; then
+  source "$HIERARCHY_DETECTOR"
+fi
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -350,6 +356,122 @@ list_backups() {
 }
 
 # =============================================================================
+# Role Guide Filtering by Organizational Level
+# =============================================================================
+
+# Determine which role guides belong to each organizational level
+# Returns: newline-separated list of role guide filename patterns for the level
+get_role_guides_for_level() {
+  local level="$1"
+
+  case "$level" in
+    company)
+      # Company level roles: executives and C-level
+      echo "cto-guide.md"
+      echo "cto-vp-engineering-guide.md"
+      echo "cpo-guide.md"
+      echo "cpo-vp-product-guide.md"
+      echo "ciso-guide.md"
+      echo "vp-engineering-guide.md"
+      echo "vp-product-guide.md"
+      echo "director-qa-guide.md"
+      ;;
+    system)
+      # System level roles: architects, platform, managers
+      echo "engineering-manager-guide.md"
+      echo "platform-engineer-guide.md"
+      echo "cloud-architect-guide.md"
+      echo "security-architect-guide.md"
+      echo "data-architect-guide.md"
+      echo "technical-program-manager-guide.md"
+      echo "data-engineer-guide.md"
+      echo "security-engineer-guide.md"
+      ;;
+    product)
+      # Product level roles: product, design, QA leadership
+      echo "qa-manager-guide.md"
+      echo "ui-designer-guide.md"
+      echo "ux-designer-guide.md"
+      echo "product-manager-guide.md"
+      echo "technical-product-manager-guide.md"
+      ;;
+    project)
+      # Project level roles: individual contributors
+      echo "software-engineer-guide.md"
+      echo "frontend-engineer-guide.md"
+      echo "backend-engineer-guide.md"
+      echo "full-stack-engineer-guide.md"
+      echo "qa-engineer-guide.md"
+      echo "sdet-guide.md"
+      echo "devops-engineer-guide.md"
+      echo "sre-guide.md"
+      echo "mobile-engineer-guide.md"
+      echo "data-analyst-guide.md"
+      echo "data-scientist-guide.md"
+      echo "scrum-master-guide.md"
+      ;;
+    *)
+      echo "Error: Unknown organizational level: $level" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Check if a role guide should be included based on current and parent level
+# Args:
+#   $1: role guide filename
+#   $2: current organizational level
+#   $3: parent organizational level (empty if no parent)
+# Returns:
+#   0 if should include, 1 if should skip
+should_include_role_guide() {
+  local role_guide="$1"
+  local current_level="$2"
+  local parent_level="${3:-}"
+
+  # If no parent (root level), include all role guides for this level
+  if [ -z "$parent_level" ]; then
+    # Check if role guide belongs to current level
+    local guides_for_level
+    guides_for_level=$(get_role_guides_for_level "$current_level" 2>/dev/null || echo "")
+    if echo "$guides_for_level" | grep -q "^${role_guide}$"; then
+      return 0
+    fi
+  else
+    # Has parent - only include guides for current level and below, skip parent levels
+    # Get all levels from parent upward (company, system, product) to exclude
+    local exclude_levels=()
+    case "$parent_level" in
+      company)
+        exclude_levels=("company")
+        ;;
+      system)
+        exclude_levels=("company" "system")
+        ;;
+      product)
+        exclude_levels=("company" "system" "product")
+        ;;
+    esac
+
+    # Check if this role guide belongs to any excluded level
+    for level in "${exclude_levels[@]}"; do
+      local guides_for_level
+      guides_for_level=$(get_role_guides_for_level "$level" 2>/dev/null || echo "")
+      if echo "$guides_for_level" | grep -q "^${role_guide}$"; then
+        # This role guide belongs to parent level or above, skip it
+        return 1
+      fi
+    done
+
+    # Role guide doesn't belong to parent levels, include it
+    return 0
+  fi
+
+  # Default: include the role guide
+  return 0
+}
+
+# =============================================================================
 # Template Content Discovery Functions
 # =============================================================================
 
@@ -466,6 +588,33 @@ apply_template_with_mode() {
 
   echo "Applying template: $template_id (mode: $mode)"
 
+  # Detect parent context for hierarchy-aware role guide filtering
+  local parent_claude_dir=""
+  local parent_level=""
+  local current_level=""
+
+  if [ -f "$HIERARCHY_DETECTOR" ]; then
+    # Get nearest parent .claude directory
+    parent_claude_dir=$(get_nearest_parent "$target_dir" 2>/dev/null || echo "")
+
+    if [ -n "$parent_claude_dir" ]; then
+      # Get parent's organizational level
+      parent_level=$(get_level_value "$parent_claude_dir" 2>/dev/null || echo "")
+
+      if [ -n "$parent_level" ]; then
+        echo "Detected parent context: $parent_level at $parent_claude_dir"
+        echo "Will filter role guides to exclude parent-level roles (inherited from parent)"
+      fi
+    else
+      echo "No parent context detected - this will be a root-level setup"
+    fi
+
+    # Try to determine current level from target directory's organizational-level.json if it exists
+    if [ -f "$target_dir/.claude/organizational-level.json" ]; then
+      current_level=$(jq -r '.level // empty' "$target_dir/.claude/organizational-level.json" 2>/dev/null || echo "")
+    fi
+  fi
+
   # Get template path
   local template_path
   template_path=$(get_template_path "$template_id")
@@ -491,6 +640,23 @@ apply_template_with_mode() {
     echo "Warning: .claude directory already exists" >&2
     echo "Use template-sync agent for updating existing setups" >&2
     return 1
+  fi
+
+  # Detect existing CLAUDE.md files before applying template
+  local preserved_claude_md=()
+  if [ -x "$PLUGIN_DIR/scripts/claude-md-analyzer.sh" ]; then
+    local scan_result
+    scan_result=$(bash "$PLUGIN_DIR/scripts/claude-md-analyzer.sh" --scan "$target_dir" 2>/dev/null || echo '{"files": []}')
+
+    # Extract file paths from scan result
+    if command -v jq &>/dev/null; then
+      while IFS= read -r file; do
+        if [ -n "$file" ] && [ "$file" != "null" ]; then
+          preserved_claude_md+=("$file")
+          echo "Detected existing CLAUDE.md: $file" >&2
+        fi
+      done < <(echo "$scan_result" | jq -r '.files[]?.path // empty' 2>/dev/null)
+    fi
   fi
 
   # Get includes for this mode
@@ -532,9 +698,52 @@ apply_template_with_mode() {
       # Copy individual files listed in manifest
       jq -r ".content_structure.root_docs.files[]" "$manifest_path" | while read -r file; do
         if [ -f "$template_path/$file" ]; then
+          # Skip CLAUDE.md if it already exists (case-insensitive check)
+          if [[ "$file" =~ [Cc][Ll][Aa][Uu][Dd][Ee]\.md$ ]] && [ -f "$target_dir/CLAUDE.md" ]; then
+            echo "Skipping $file - preserving existing CLAUDE.md" >&2
+            continue
+          fi
           cp "$template_path/$file" "$target_dir/"
         fi
       done
+    elif [ "$section" = "claude_config" ] && [ -n "$parent_level" ]; then
+      # Special handling for claude_config when parent context exists
+      # Copy the directory structure, but filter role guides
+      mkdir -p "$dest_path"
+
+      # Copy all non-role-guide content
+      find "$source_path" -mindepth 1 -maxdepth 1 ! -name 'role-guides' -exec cp -r {} "$dest_path/" \;
+
+      # Handle role-guides with filtering
+      if [ -d "$source_path/role-guides" ]; then
+        mkdir -p "$dest_path/role-guides"
+
+        local role_guides_source="$source_path/role-guides"
+        local role_guides_dest="$dest_path/role-guides"
+        local filtered_count=0
+        local copied_count=0
+
+        echo "Filtering role guides based on parent level: $parent_level"
+
+        # Copy role guides selectively
+        for guide_file in "$role_guides_source"/*.md; do
+          if [ -f "$guide_file" ]; then
+            local guide_name
+            guide_name=$(basename "$guide_file")
+
+            # Check if we should include this guide
+            if should_include_role_guide "$guide_name" "${current_level:-project}" "$parent_level"; then
+              cp "$guide_file" "$role_guides_dest/"
+              ((copied_count++))
+            else
+              echo "  Skipping $guide_name (inherited from parent $parent_level level)" >&2
+              ((filtered_count++))
+            fi
+          fi
+        done
+
+        echo "Role guide filtering: copied $copied_count, filtered $filtered_count (inherited from parent)"
+      fi
     elif [ -d "$source_path" ]; then
       # Copy directory
       mkdir -p "$(dirname "$dest_path")"
@@ -548,6 +757,17 @@ apply_template_with_mode() {
 
   # Record applied template with mode
   record_applied_template "$template_id" "$mode" "$target_dir/.claude/preferences.json"
+
+  # Record preserved CLAUDE.md files in preferences.json
+  if [ ${#preserved_claude_md[@]} -gt 0 ]; then
+    local prefs_file="$target_dir/.claude/preferences.json"
+    if [ -f "$prefs_file" ] && command -v jq &>/dev/null; then
+      local preserved_json
+      preserved_json=$(printf '%s\n' "${preserved_claude_md[@]}" | jq -R . | jq -s .)
+      jq --argjson preserved "$preserved_json" '.preserved_claude_md = $preserved' "$prefs_file" > "$prefs_file.tmp" && mv "$prefs_file.tmp" "$prefs_file"
+      echo "Recorded ${#preserved_claude_md[@]} preserved CLAUDE.md file(s)" >&2
+    fi
+  fi
 
   echo -e "${GREEN}✓${NC} Template applied successfully (mode: $mode)"
   return 0

@@ -1,0 +1,8 @@
+{
+  "level": "project",
+  "level_name": "project",
+  "parent_claude_dir": "/home/practice-adam-brooks/role-context-manager/tests/fixtures/hierarchical/company/product/.claude",
+  "parent_level": "product",
+  "is_root": false,
+  "hierarchy_path": ["company", "product", "project"]
+}

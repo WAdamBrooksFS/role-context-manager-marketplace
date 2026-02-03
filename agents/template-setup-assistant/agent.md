@@ -100,6 +100,117 @@ Also available:
 Which template would you like to use?
 ```
 
+### 2.5. Detect Organizational Context
+
+**Before applying a template**, detect whether this setup is part of a larger organizational hierarchy. This helps determine the appropriate organizational level and ensures proper parent-child relationships.
+
+**What to detect**:
+- Does a parent `.claude` directory exist in ancestor directories?
+- What is the parent's organizational level?
+- What level should this new setup be?
+
+**How to detect parents**:
+```bash
+# Find nearest parent .claude directory
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+parent_dir=$(bash $PLUGIN_DIR/scripts/hierarchy-detector.sh get-parent)
+
+if [[ -n "$parent_dir" ]]; then
+  # Get parent level information
+  parent_level=$(bash $PLUGIN_DIR/scripts/hierarchy-detector.sh read-level "$parent_dir" | jq -r '.level')
+  parent_name=$(bash $PLUGIN_DIR/scripts/hierarchy-detector.sh read-level "$parent_dir" | jq -r '.level_name')
+
+  echo "Parent found:"
+  echo "  Level: $parent_level"
+  echo "  Name: $parent_name"
+  echo "  Location: $parent_dir"
+else
+  echo "No parent organizational structure detected"
+fi
+```
+
+**If parent structure found**:
+
+Present the context to the user:
+```
+I detected a parent organizational structure:
+
+Parent level: [parent_level]
+Parent name: '[parent_name]'
+Parent location: [relative_path_to_parent]
+
+You're likely setting up:
+1. A [child_level] under [parent_name] (recommended)
+2. A new [parent_level] alongside [parent_name]
+
+Which applies to your situation? [1]
+```
+
+**Valid child levels by parent**:
+- **company** parent → can contain: system, product, project
+- **system** parent → can contain: product, project
+- **product** parent → can contain: project only
+- **project** parent → cannot have children
+
+**Example parent found scenario**:
+```
+I detected a parent organizational structure:
+
+Parent level: product
+Parent name: 'MyProduct'
+Parent location: ../../../.claude
+
+You're likely setting up:
+1. A project under MyProduct (recommended)
+2. A new product alongside MyProduct
+
+Which applies to your situation? [1]
+```
+
+If user chooses option 1 (child under parent):
+- Validate the child level is valid for the parent
+- Set organizational level accordingly when applying template
+- The template-manager will automatically detect and record parent relationship
+
+If user chooses option 2 (sibling at same level):
+- Warn that this creates a sibling structure
+- Confirm the level should match parent's level
+- Ask for clarification on organizational structure
+
+**If no parent structure found**:
+
+Ask the user to clarify:
+```
+No parent organizational structure detected in ancestor directories.
+
+Are you:
+1. Setting up a new top-level structure (this is the root) - RECOMMENDED
+2. Part of an existing organization (parent .claude exists elsewhere)
+
+Which applies? [1]
+```
+
+If option 1 (new root):
+- Proceed with template selection
+- Set appropriate level based on template (usually 'company' for top-level)
+- Mark as root in organizational-level.json
+
+If option 2 (part of existing org):
+- Ask user for parent .claude directory path
+- Validate parent exists and has organizational-level.json
+- Verify parent-child relationship is valid
+- Proceed with validated hierarchy
+
+**When to skip detection**:
+- If `.claude` directory already exists with organizational-level.json
+- If user explicitly requests to skip hierarchy detection
+- During template sync/update operations
+
+**Error cases**:
+- **Invalid parent-child relationship**: If detected parent level cannot contain the intended child level, warn user and suggest valid options
+- **Missing parent organizational-level.json**: If parent `.claude` exists but has no level file, warn user and ask them to configure parent first
+- **Circular hierarchy**: If detection logic fails or creates circular reference, fail safely and ask user to set level manually
+
 ### 3.5. Select Application Mode (New in v1.3.0)
 
 After user selects a template, offer them application mode options. Templates now support three modes:
@@ -149,6 +260,38 @@ bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode <template-id> <mode> .
 # Example:
 bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode software-org standard .
 ```
+
+### 3.7. Check for Existing CLAUDE.md Files
+
+**Before applying a template**, scan for existing CLAUDE.md files in the directory tree. These files contain project-specific AI guidance and should be preserved.
+
+**What to do**:
+- Scan for CLAUDE.md files (case-insensitive)
+- If found, inform user they will be preserved
+- Record preservation in preferences after template application
+
+**How to detect**:
+```bash
+# Scan for CLAUDE.md files in current directory
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+bash $PLUGIN_DIR/scripts/claude-md-analyzer.sh --scan .
+```
+
+**Example messaging**:
+```
+I found an existing CLAUDE.md file in your project root. This file contains project-specific
+guidance for AI assistants and will be preserved when applying the template.
+
+The template's default CLAUDE.md will not overwrite your existing file.
+
+Location: ./CLAUDE.md
+```
+
+**What gets recorded**:
+The template-manager.sh script automatically:
+- Detects existing CLAUDE.md files before copying
+- Skips copying template's CLAUDE.md if one exists
+- Records preserved files in `.claude/preferences.json` under `preserved_claude_md` array
 
 ### 4. Apply Selected Template
 
@@ -226,6 +369,69 @@ bash $PLUGIN_DIR/scripts/template-manager.sh apply-mode software-org standard .
 
    Would you like me to help you set your role now?
    ```
+
+### 4.5. Present CLAUDE.md Enhancement Suggestions
+
+**After applying template**, if preserved CLAUDE.md files were detected, offer to generate enhancement suggestions.
+
+**What to do**:
+- Check if `.claude/preferences.json` contains `preserved_claude_md` array
+- If yes, offer to analyze and suggest enhancements
+- Generate suggestions using claude-md-analyzer.sh
+
+**How to generate suggestions**:
+```bash
+# Generate suggestions for a preserved CLAUDE.md file
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+bash $PLUGIN_DIR/scripts/claude-md-analyzer.sh --suggest ./CLAUDE.md software-org
+```
+
+This command will:
+- Analyze the existing CLAUDE.md content
+- Detect missing standard sections (mission, capabilities, guidelines, etc.)
+- Generate adaptive suggestions based on file size:
+  - Small files (<100 lines): 2-3 high-level suggestions
+  - Large files (≥100 lines): 5-7 detailed suggestions with examples
+- Save suggestions to `.claude/claude-md-suggestions.json`
+
+**Example messaging**:
+```
+✓ Template applied successfully!
+
+I noticed you have an existing CLAUDE.md file that was preserved. Would you like me to
+analyze it and suggest enhancements to align with best practices?
+
+This will:
+1. Analyze your current CLAUDE.md structure
+2. Identify missing sections or improvements
+3. Generate tailored suggestions based on your file's size and content
+4. Save suggestions to .claude/claude-md-suggestions.json
+
+You can review and apply suggestions at your own pace using the /enhance-claude-md command.
+
+Generate suggestions now? (yes/no)
+```
+
+**If user agrees**:
+```bash
+# Generate and display suggestions
+PLUGIN_DIR=~/.claude/plugins/role-context-manager
+bash $PLUGIN_DIR/scripts/claude-md-analyzer.sh --suggest ./CLAUDE.md software-org | jq '.enhancements[] | "- [\(.priority)] \(.section): \(.description)"' -r
+```
+
+**Next steps messaging**:
+```
+I've generated [N] enhancement suggestions for your CLAUDE.md file.
+
+Suggestions saved to: .claude/claude-md-suggestions.json
+
+To review and apply suggestions later, use:
+  /enhance-claude-md --list    # View all suggestions
+  /enhance-claude-md --plan    # Get detailed implementation plan
+  /enhance-claude-md           # Interactive enhancement session
+
+These are optional improvements - your existing CLAUDE.md is already functional!
+```
 
 ## Workflow Example
 
