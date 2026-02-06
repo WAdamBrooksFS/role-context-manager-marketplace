@@ -14,6 +14,12 @@
 
 set -euo pipefail
 
+# Source path-config.sh library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./path-config.sh
+source "$SCRIPT_DIR/path-config.sh"
+load_path_config
+
 # Find repository root (look for .git directory)
 find_repo_root() {
     local dir="$PWD"
@@ -28,12 +34,15 @@ find_repo_root() {
     return 1
 }
 
-# Find nearest .claude directory
+# Find nearest claude directory
 find_claude_dir() {
     local dir="$PWD"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+
     while [[ "$dir" != "/" ]]; do
-        if [[ -d "$dir/.claude" ]]; then
-            echo "$dir/.claude"
+        if [[ -d "$dir/$claude_dir_name" ]]; then
+            echo "$dir/$claude_dir_name"
             return 0
         fi
         dir="$(dirname "$dir")"

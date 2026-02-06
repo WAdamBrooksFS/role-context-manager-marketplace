@@ -43,6 +43,8 @@ The command respects the configuration hierarchy:
 1. **Project role** (`.claude/config.json` in current directory) takes precedence
 2. **Global role** (`~/.claude/config.json`) is used if no project role exists
 
+Note: If custom paths are configured (via `paths.json` or environment variables), the command uses the configured directory names instead of `.claude`. For example, if configured to use `.myorg`, it reads from `.myorg/config.json`.
+
 ### Graceful Degradation
 
 The command never blocks or fails:
@@ -131,6 +133,27 @@ The command automatically loads all documents listed in the role guide's "Docume
 ```
 
 All three documents will be loaded and injected into the context along with the role guide.
+
+### Path Configuration Support
+
+The command respects custom path configuration:
+
+**Default paths**:
+```bash
+# Loads from .claude/role-guides/engineer-guide.md
+/load-role-context
+```
+
+**Custom paths** (via paths.json or environment):
+```bash
+# If configured to use .myorg and guides/
+# Loads from .myorg/guides/engineer-guide.md
+export RCM_CLAUDE_DIR_NAME=".myorg"
+export RCM_ROLE_GUIDES_DIR="guides"
+/load-role-context
+```
+
+The command automatically detects and uses the configured paths. See [Path Configuration](../docs/PATH-CONFIGURATION.md) for details.
 
 ## Claude Instructions
 

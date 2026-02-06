@@ -21,6 +21,10 @@ set -euo pipefail
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Source path configuration library
+source "$SCRIPT_DIR/path-config.sh"
+load_path_config
+
 # Source helper scripts
 source "$SCRIPT_DIR/level-detector.sh" 2>/dev/null || true
 source "$SCRIPT_DIR/doc-validator.sh" 2>/dev/null || true
@@ -31,10 +35,12 @@ source "$SCRIPT_DIR/doc-validator.sh" 2>/dev/null || true
 
 # Find project-level .claude directory (searches upward from PWD)
 find_claude_dir_upward() {
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
-        if [[ -d "$dir/.claude" ]]; then
-            echo "$dir/.claude"
+        if [[ -d "$dir/$claude_dir_name" ]]; then
+            echo "$dir/$claude_dir_name"
             return 0
         fi
         dir="$(dirname "$dir")"
@@ -59,11 +65,13 @@ is_project_context() {
 #   Path to config directory
 find_config_dir() {
     local scope="${1:-auto}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
 
     case "$scope" in
         global)
             # Force global config
-            echo "$HOME/.claude"
+            echo "$HOME/$claude_dir_name"
             return 0
             ;;
         project)
@@ -72,7 +80,7 @@ find_config_dir() {
             ;;
         auto)
             # Try project first, fallback to global
-            find_claude_dir_upward || echo "$HOME/.claude"
+            find_claude_dir_upward || echo "$HOME/$claude_dir_name"
             return 0
             ;;
         *)
@@ -84,17 +92,23 @@ find_config_dir() {
 
 # Get effective config directory (project overrides global)
 get_effective_config_dir() {
-    find_claude_dir_upward || echo "$HOME/.claude"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    find_claude_dir_upward || echo "$HOME/$claude_dir_name"
 }
 
 # Ensure global config directory exists with defaults
 ensure_global_config() {
-    if [[ ! -d "$HOME/.claude" ]]; then
-        mkdir -p "$HOME/.claude"
-        echo "✓ Created global config directory: ~/.claude/" >&2
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    local global_claude_dir="$HOME/$claude_dir_name"
+
+    if [[ ! -d "$global_claude_dir" ]]; then
+        mkdir -p "$global_claude_dir"
+        echo "✓ Created global config directory: ~/$claude_dir_name/" >&2
 
         # Initialize with sensible defaults
-        cat > "$HOME/.claude/preferences.json" <<'EOF'
+        cat > "$global_claude_dir/preferences.json" <<'EOF'
 {
   "user_role": null,
   "auto_update_templates": true,
@@ -159,8 +173,10 @@ resolve_document_path() {
     fi
 
     # 3. Global .claude directory (for global-only docs)
-    if [[ -f "$HOME/.claude/$doc_path" ]]; then
-        echo "$HOME/.claude/$doc_path"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    if [[ -f "$HOME/$claude_dir_name/$doc_path" ]]; then
+        echo "$HOME/$claude_dir_name/$doc_path"
         return 0
     fi
 
@@ -196,7 +212,9 @@ get_preference() {
     fi
 
     # Fallback to global config
-    local global_config="$HOME/.claude/preferences.json"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    local global_config="$HOME/$claude_dir_name/preferences.json"
     if [[ -f "$global_config" ]]; then
         if command -v jq &> /dev/null; then
             jq -r ".$key // empty" "$global_config" 2>/dev/null || echo ""
@@ -216,11 +234,13 @@ set_preference() {
     local key="$1"
     local value="$2"
     local scope="${3:-auto}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
 
     local config_dir
     case "$scope" in
         global)
-            config_dir="$HOME/.claude"
+            config_dir="$HOME/$claude_dir_name"
             ensure_global_config
             ;;
         project)
@@ -235,7 +255,7 @@ set_preference() {
             if is_project_context; then
                 config_dir="$(find_claude_dir_upward)"
             else
-                config_dir="$HOME/.claude"
+                config_dir="$HOME/$claude_dir_name"
                 ensure_global_config
             fi
             ;;
@@ -275,9 +295,11 @@ set_preference() {
 
 # Ensure .claude directory exists
 ensure_claude_dir() {
-    if [[ ! -d ".claude" ]]; then
-        mkdir -p ".claude"
-        echo "Created .claude directory" >&2
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    if [[ ! -d "$claude_dir_name" ]]; then
+        mkdir -p "$claude_dir_name"
+        echo "Created $claude_dir_name directory" >&2
     fi
 }
 
@@ -335,8 +357,10 @@ set_user_role() {
 get_role_guide_path() {
     local claude_dir="$1"
     local role="$2"
+    local role_guides_dir
+    role_guides_dir="$(get_role_guides_dir)"
 
-    local role_guide="$claude_dir/role-guides/${role}-guide.md"
+    local role_guide="$claude_dir/$role_guides_dir/${role}-guide.md"
 
     if [[ -f "$role_guide" ]]; then
         echo "$role_guide"
@@ -344,7 +368,7 @@ get_role_guide_path() {
     fi
 
     # Try without -guide suffix
-    role_guide="$claude_dir/role-guides/${role}.md"
+    role_guide="$claude_dir/$role_guides_dir/${role}.md"
     if [[ -f "$role_guide" ]]; then
         echo "$role_guide"
         return 0
@@ -357,7 +381,9 @@ get_role_guide_path() {
 # List available roles for current level
 list_available_roles() {
     local claude_dir="$1"
-    local role_guides_dir="$claude_dir/role-guides"
+    local role_guides_dirname
+    role_guides_dirname="$(get_role_guides_dir)"
+    local role_guides_dir="$claude_dir/$role_guides_dirname"
 
     if [[ ! -d "$role_guides_dir" ]]; then
         echo "No roles defined at this level" >&2
@@ -570,8 +596,10 @@ merge_role_documents() {
 # Display role context
 cmd_show_role_context() {
     local claude_dir
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
     claude_dir="$(find_claude_dir)" || {
-        echo "Error: No .claude directory found" >&2
+        echo "Error: No $claude_dir_name directory found" >&2
         return 2
     }
 
@@ -654,9 +682,11 @@ cmd_set_role() {
     fi
 
     local claude_dir
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
     claude_dir="$(find_claude_dir)" || {
         ensure_claude_dir
-        claude_dir="./.claude"
+        claude_dir="./$claude_dir_name"
     }
 
     # Check if role exists
@@ -688,10 +718,12 @@ cmd_set_role() {
 # Initialize role documents from guide
 cmd_init_role_docs() {
     local reset="${1:-false}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
 
     local claude_dir
     claude_dir="$(find_claude_dir)" || {
-        echo "Error: No .claude directory found" >&2
+        echo "Error: No $claude_dir_name directory found" >&2
         return 2
     }
 
@@ -746,9 +778,11 @@ cmd_update_role_docs() {
         return 1
     fi
 
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
     local claude_dir
     claude_dir="$(find_claude_dir)" || {
-        echo "Error: No .claude directory found" >&2
+        echo "Error: No $claude_dir_name directory found" >&2
         return 2
     }
 
@@ -1037,7 +1071,11 @@ cmd_load_role_context() {
 
 # Check if .claude setup is complete and ready to use
 check_setup_complete() {
-    local claude_dir="${1:-.claude}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    local role_guides_dirname
+    role_guides_dirname="$(get_role_guides_dir)"
+    local claude_dir="${1:-$claude_dir_name}"
 
     # Check if .claude directory exists
     if [[ ! -d "$claude_dir" ]]; then
@@ -1045,12 +1083,12 @@ check_setup_complete() {
     fi
 
     # Check if role-guides directory exists and has files
-    if [[ ! -d "$claude_dir/role-guides" ]]; then
+    if [[ ! -d "$claude_dir/$role_guides_dirname" ]]; then
         return 1
     fi
 
     local guide_count
-    guide_count=$(find "$claude_dir/role-guides" -name "*.md" 2>/dev/null | wc -l)
+    guide_count=$(find "$claude_dir/$role_guides_dirname" -name "*.md" 2>/dev/null | wc -l)
     if [[ $guide_count -eq 0 ]]; then
         return 1
     fi
@@ -1073,16 +1111,20 @@ check_setup_complete() {
 
 # Get list of missing setup items
 get_missing_setup_items() {
-    local claude_dir="${1:-.claude}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    local role_guides_dirname
+    role_guides_dirname="$(get_role_guides_dir)"
+    local claude_dir="${1:-$claude_dir_name}"
     local missing=()
 
     if [[ ! -d "$claude_dir" ]]; then
-        missing+=(".claude directory")
+        missing+=("$claude_dir_name directory")
     fi
 
-    if [[ ! -d "$claude_dir/role-guides" ]]; then
-        missing+=("role-guides directory")
-    elif [[ $(find "$claude_dir/role-guides" -name "*.md" 2>/dev/null | wc -l) -eq 0 ]]; then
+    if [[ ! -d "$claude_dir/$role_guides_dirname" ]]; then
+        missing+=("$role_guides_dirname directory")
+    elif [[ $(find "$claude_dir/$role_guides_dirname" -name "*.md" 2>/dev/null | wc -l) -eq 0 ]]; then
         missing+=("role guide files")
     fi
 
@@ -1109,7 +1151,9 @@ get_missing_setup_items() {
 
 # Check if template updates are available
 check_template_updates() {
-    local claude_dir="${1:-.claude}"
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)"
+    local claude_dir="${1:-$claude_dir_name}"
 
     # Source template-manager.sh to access its functions
     local script_dir="$(dirname "${BASH_SOURCE[0]}")"
@@ -1141,7 +1185,9 @@ cmd_list_roles_json() {
         return 0
     }
 
-    local role_guides_dir="$claude_dir/role-guides"
+    local role_guides_dirname
+    role_guides_dirname="$(get_role_guides_dir)"
+    local role_guides_dir="$claude_dir/$role_guides_dirname"
 
     if [[ ! -d "$role_guides_dir" ]]; then
         echo "[]"
@@ -1215,7 +1261,9 @@ cmd_get_all_roles_by_level() {
         return 0
     }
 
-    local role_guides_dir="$claude_dir/role-guides"
+    local role_guides_dirname
+    role_guides_dirname="$(get_role_guides_dir)"
+    local role_guides_dir="$claude_dir/$role_guides_dirname"
 
     if [[ ! -d "$role_guides_dir" ]]; then
         echo '{"company":[],"system":[],"product":[],"project":[]}'

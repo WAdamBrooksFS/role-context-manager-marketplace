@@ -1,0 +1,28 @@
+{
+  "file": "/tmp/test-claude-md-44303/test.md",
+  "line_count": 1,
+  "suggestion_count": 3,
+  "enhancements": [
+    {
+      "type": "add_section",
+      "priority": "high",
+      "section": "Mission Statement",
+      "description": "Add a clear mission statement describing the purpose and goals of your project",
+      "rationale": "Helps Claude understand project objectives"
+    },
+    {
+      "type": "add_section",
+      "priority": "high",
+      "section": "Key Capabilities",
+      "description": "Document the main features and capabilities of your project",
+      "rationale": "Provides context for code modifications"
+    },
+    {
+      "type": "add_section",
+      "priority": "medium",
+      "section": "Development Guidelines",
+      "description": "Add coding standards and development practices",
+      "rationale": "Ensures consistent code quality"
+    }
+  ]
+}

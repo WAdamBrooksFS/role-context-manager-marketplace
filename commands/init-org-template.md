@@ -21,6 +21,8 @@ This command helps users who don't yet have a `.claude` directory structure to s
 - `--project`: Initialize template in project config (./.claude/)
 - `--scope <auto|global|project>`: Explicitly specify scope (default: auto)
 
+Note: If custom paths are configured via `paths.json` or environment variables, the template will be initialized in the customized directory (e.g., `.myorg` instead of `.claude`).
+
 ## Instructions for Claude
 
 When this command is executed, you should invoke the **template-setup-assistant agent** to guide the user through template selection and setup.
@@ -151,9 +153,48 @@ When this command is executed, you should invoke the **template-setup-assistant 
 - Leave project in original state
 - User can run command again when ready
 
+## Path Customization During Initialization
+
+Templates can include custom path configuration in their `paths.json` file. When applying a template:
+
+**If template includes paths.json**:
+- Agent asks if you want to use template's directory names
+- You can accept template paths or use defaults
+- Example: Template specifies `.myorg` instead of `.claude`
+
+**If you've already configured custom paths**:
+- Template is applied to your configured directories
+- Template's paths.json is ignored in favor of existing configuration
+- Example: Your `.custom` directory receives the template
+
+**Customizing paths after initialization**:
+```bash
+# Initialize template first
+/init-org-template
+
+# Then customize paths if needed
+/configure-paths --claude-dir=.myorg --role-guides-dir=guides
+```
+
+**Example with custom paths**:
+```bash
+# Configure custom paths first
+/configure-paths --claude-dir=.myorg
+
+# Initialize template (uses .myorg directory)
+/init-org-template
+
+# Output:
+# ✓ Template applied to: .myorg/
+# ✓ Using custom path configuration from paths.json
+```
+
+See [Path Configuration](../docs/PATH-CONFIGURATION.md) for complete details on customizing directory names.
+
 ## Notes
 
 - This command is designed to be safe and non-destructive
 - Agent always gets user approval before making changes
 - Existing customizations are preserved when possible
 - Template can be changed later by running command again
+- Path configuration can be customized before or after template initialization

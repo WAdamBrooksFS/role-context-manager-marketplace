@@ -1,529 +1,437 @@
-# WEAVER_BLUEPRINT: Automatic Role-Guide Loading Implementation Verification
+# WEAVER_BLUEPRINT: Path Configuration Manifest System
 
-**Generated**: 2026-01-23
-**Plan Source**: `docs/IMPLEMENTATION-PLAN-AUTO-ROLE-LOADING.md`
-**Purpose**: Verify thorough implementation of automatic role-guide loading on SessionStart
+**Version**: 1.7.0
+**Generated From**: Plan at `/home/practice-adam-brooks/.claude/plans/shimmering-petting-hammock.md`
+**Feature**: Comprehensive Path Configuration with Hybrid Manifest + Environment Variables
+**Status**: Ready for Decomposition
+**Estimated Timeline**: 6 weeks
 
----
+## Executive Summary
 
-## Implementation Status Overview
+Implement a hybrid path configuration system enabling enterprise/multi-tenant deployments where all directory names, file locations, and organizational conventions are fully customizable. Users can configure paths via manifest files (`.claude/paths.json`) for persistent config or environment variables for runtime overrides.
 
-This blueprint verifies that all components of the "Automatic Role-Guide Loading on SessionStart" feature have been implemented according to the plan.
+**Key Value Proposition**: Eliminates hardcoded `.claude` directory assumptions (40+ occurrences), enabling multiple isolated instances, organizational naming compliance, and collision-free multi-tool ecosystems.
 
----
+## Requirements
 
-## 1. File Creation Requirements
+### User Goals
+- **Primary**: Support multi-tenant/enterprise deployments with custom naming conventions
+- **Secondary**: Allow flexible configuration without breaking existing setups (100% backward compatible)
+- **Tertiary**: Enable per-project and per-user path customization with clear precedence
 
-### ✓ NEW: `commands/load-role-context.md`
+### Current Pain Points
+1. `.claude` directory name hardcoded in 40+ locations → name collisions with other tools
+2. `role-guides/` subdirectory hardcoded → can't match org conventions (`personas/`, `agents/`)
+3. Config filenames hardcoded (`preferences.json`, etc.) → difficult to run multiple instances
+4. Backup/cache locations hardcoded → compliance requirements unmet
 
-**Status**: ✅ **IMPLEMENTED**
+### Success Criteria
+- [ ] 100% backward compatible with v1.6.0 (zero migration required)
+- [ ] Environment variables override all other config sources
+- [ ] Manifest files configure persistent project settings
+- [ ] Hierarchical setups work with custom directory names
+- [ ] Performance overhead <10ms per command invocation
+- [ ] All 125+ comprehensive tests pass
+- [ ] Security: Rejects path traversal, validates all inputs
 
-**Location**: `/home/practice-adam-brooks/role-context-manager/commands/load-role-context.md`
+## Architecture
 
-**Requirements Verification**:
-- [x] Command documentation exists
-- [x] Three output modes documented (--quiet, normal, --verbose)
-- [x] Multi-scope hierarchy explained
-- [x] Graceful degradation behavior documented
-- [x] SessionStart hook integration examples included
-- [x] Claude instructions present
-- [x] Document loading behavior explained
+### Configuration Hierarchy (Precedence Order)
 
-**Constraints Met**:
-- File follows plugin command documentation pattern
-- All flags properly documented (--quiet, --verbose)
-- Examples include all three output modes
-- Exit code documented (always 0)
-
----
-
-## 2. Script Modifications
-
-### ✓ MODIFY: `scripts/role-manager.sh`
-
-**Status**: ✅ **IMPLEMENTED**
-
-**Location**: `/home/practice-adam-brooks/role-context-manager/scripts/role-manager.sh`
-
-**Function: `cmd_load_role_context()`** (Lines 856-1029)
-
-#### Logic Flow Verification (All 11 Steps from Plan)
-
-| Step | Requirement | Status | Line Range |
-|------|-------------|--------|------------|
-| 1 | Parse mode argument (quiet/normal/verbose) | ✅ | 857-874 |
-| 2 | Determine effective config directory | ✅ | 876-878 |
-| 3 | Get current role using get_preference() | ✅ | 880-882 |
-| 4 | Handle no-role case (silent exit code 0) | ✅ | 884-887 |
-| 5 | Locate role guide using get_role_guide_path() | ✅ | 889-891 |
-| 6 | Handle missing-guide case (silent in quiet mode) | ✅ | 893-899 |
-| 7 | Read role guide content with cat | ✅ | 901-903 |
-| 8 | Extract document references | ✅ | 905-915 |
-| 9 | Read each referenced document (error handling) | ✅ | 917-934 |
-| 10 | Output based on mode (quiet/normal/verbose) | ✅ | 936-1029 |
-| 11 | Exit with code 0 (always success) | ✅ | Implicit |
-
-**Dependencies Verified**:
-- [x] `get_effective_config_dir()` function exists (Line 878)
-- [x] `get_preference()` function exists (Line 882)
-- [x] `get_role_guide_path()` function exists (Line 891)
-- [x] `extract_document_references()` function exists (Line 379, 907)
-- [x] `resolve_document_path()` function used (Line 923)
-- [x] `is_project_context()` function used (Line 947)
-
-**Main Dispatcher Updated**: ✅ **VERIFIED** (Lines 1295-1297)
-```bash
-load|load-role-context)
-    cmd_load_role_context "$@"
-    ;;
+```
+1. Environment Variables     RCM_CLAUDE_DIR_NAME, RCM_ROLE_GUIDES_DIR, etc.
+   ↓ (highest priority)
+2. Project Manifest          .claude/paths.json or $PWD/.custom/paths.json
+   ↓
+3. Global Manifest           ~/.config/role-context-manager/paths.json
+   ↓
+4. Hardcoded Defaults        Backward compatible with v1.6.0
+   (lowest priority)
 ```
 
----
+### Configuration Schema
 
-### ✓ MODIFY: `scripts/post-install.sh`
+**Manifest Location**: `.claude/paths.json` (or custom if already configured)
 
-**Status**: ✅ **IMPLEMENTED**
-
-**Location**: `/home/practice-adam-brooks/role-context-manager/scripts/post-install.sh`
-
-**Hook Configuration Verification** (Lines 95-98):
-
-```bash
-jq '.hooks.SessionStart = [
-    "/validate-setup --quiet",
-    "/sync-template --check-only",
-    "/load-role-context --quiet"
-]' "$SETTINGS_FILE" > "$temp_file"
+```json
+{
+  "$schema": "https://role-context-manager/schemas/paths-v1.json",
+  "version": "1.0.0",
+  "directories": {
+    "claude_dir_name": ".claude",
+    "role_guides_dir": "role-guides",
+    "backups_dir": ".backups",
+    "cache_dir": ".cache",
+    "document_guides_dir": "document-guides"
+  },
+  "files": {
+    "preferences": "preferences.json",
+    "organizational_level": "organizational-level.json",
+    "role_references": "role-references.json",
+    "role_references_local": "role-references.local.json",
+    "settings": "settings.json",
+    "settings_local": "settings.local.json"
+  },
+  "global": {
+    "home_config_dir": "~/.claude",
+    "system_config_dir": "~/.config/role-context-manager"
+  },
+  "plugin": {
+    "templates_dir": "templates",
+    "scripts_dir": "scripts",
+    "commands_dir": "commands",
+    "agents_dir": "agents"
+  }
+}
 ```
 
-**Requirements Met**:
-- [x] Third command added to SessionStart hook
-- [x] Command uses `--quiet` flag
-- [x] Correct execution order (validate → sync → load)
-- [x] User notification updated (Line 114)
+### Environment Variables (15 Total)
 
-**Hook Execution Order**:
-1. ✅ `/validate-setup --quiet` - Validates .claude directory
-2. ✅ `/sync-template --check-only` - Checks for template updates
-3. ✅ `/load-role-context --quiet` - Loads role guide + documents
-
----
-
-## 3. Documentation Updates
-
-### ✓ MODIFY: `commands/setup-plugin-hooks.md`
-
-**Status**: ✅ **IMPLEMENTED**
-
-**Location**: `/home/practice-adam-brooks/role-context-manager/commands/setup-plugin-hooks.md`
-
-**Hook Examples Updated**:
-- [x] Minimal configuration includes `/load-role-context --quiet` (Lines 119-122)
-- [x] Standard configuration includes all three commands (Lines 142-145)
-- [x] Verbose configuration includes `/load-role-context --verbose` (Lines 156-159)
-- [x] Explanation of role context loading (Lines 216-219)
-- [x] Expected behavior documented (Line 59-60)
-
----
-
-### ✓ MODIFY: `README.md`
-
-**Status**: ✅ **IMPLEMENTED**
-
-**Location**: `/home/practice-adam-brooks/role-context-manager/README.md`
-
-**Documentation Sections Updated**:
-
-1. **SessionStart Hook Section** (Lines 102-104):
-   - [x] Role context loading described
-   - [x] Listed as third automatic check
-   - [x] Behavior explained
-
-2. **Hook Examples** (Lines 145-175):
-   - [x] Minimal configuration includes load-role-context
-   - [x] Standard configuration includes load-role-context
-   - [x] Verbose configuration includes load-role-context
-
-3. **Command Reference** (Lines 357-388):
-   - [x] `/load-role-context` command fully documented
-   - [x] Three flags explained (--quiet, --verbose)
-   - [x] Usage examples provided
-   - [x] What it does section complete
-   - [x] Output modes explained
-   - [x] When to use documented
-   - [x] Notes included
-
-**Key Messages Present**:
-- [x] Automatic loading after `/set-role`
-- [x] Silent mode for clean startup
-- [x] Manual invocation for debugging
-- [x] Multi-scope hierarchy respected
-
----
-
-### ✓ UPDATE: `CHEATSHEET.md`
-
-**Status**: ✅ **IMPLEMENTED**
-
-**Location**: `/home/practice-adam-brooks/role-context-manager/CHEATSHEET.md`
-
-**Updates Verified**:
-- [x] Command listed in commands table (Line 331)
-- [x] Flags documented (--quiet, --verbose)
-- [x] SessionStart hook examples include the command (Lines 406-408)
-- [x] Hook description includes role loading (Line 418)
-
----
-
-## 4. Implementation Quality Checks
-
-### Multi-Scope Support
-
-**Status**: ✅ **FULLY SUPPORTED**
-
-**Verification**:
-- [x] Uses `get_effective_config_dir()` for project/global resolution
-- [x] Uses `get_preference("user_role")` with hierarchy support
-- [x] Uses `get_role_guide_path()` with fallback logic
-- [x] Correctly identifies scope in verbose mode (Line 947)
-
-### No Blocking Behavior
-
-**Status**: ✅ **COMPLIANT**
-
-**Verification**:
-- [x] All error conditions exit with code 0
-- [x] No role set: Silent exit (Lines 885-887)
-- [x] Role guide missing: Silent in quiet mode, warn otherwise (Lines 894-899)
-- [x] Missing documents: Best effort loading, no failures (Lines 922-934)
-- [x] Never blocks SessionStart hooks
-
-### Output Modes
-
-**Status**: ✅ **ALL THREE MODES IMPLEMENTED**
-
-| Mode | Implementation | Line Range | Format Correct |
-|------|----------------|------------|----------------|
-| Quiet | ✅ One-line summary | 938-940 | ✓ |
-| Normal | ✅ Full context wrapper | 994-1029 | ✓ |
-| Verbose | ✅ Full + metadata | 942-992 | ✓ |
-
-**Quiet Mode Output Format**: ✅
-```
-✓ Role context loaded: {role-name} ({count} documents)
-```
-
-**Normal Mode Output Format**: ✅
-```
-=== ROLE CONTEXT LOADED ===
-
-You are collaborating with a user in the role: {role-name}
-
-The following role guide defines how you should assist this user:
-
----
-{FULL ROLE GUIDE CONTENT}
----
-
-## Referenced Documents
-...
-
-=== END ROLE CONTEXT ===
-```
-
-**Verbose Mode Output Format**: ✅
-- Includes metadata (role, scope, path, document count)
-- Shows document list before content
-- Full role guide and documents follow
-
-### Context Injection Format
-
-**Status**: ✅ **MATCHES PLAN SPECIFICATION**
-
-**Verification**:
-- [x] Opening marker: `=== ROLE CONTEXT LOADED ===`
-- [x] Role identification present
-- [x] Role guide content wrapped with `---` markers
-- [x] Referenced documents section included
-- [x] Each document has path header and content
-- [x] Closing instructions present
-- [x] Closing marker: `=== END ROLE CONTEXT ===`
-
----
-
-## 5. Edge Case Handling
-
-### Edge Cases from Plan
-
-| Edge Case | Implementation Status | Line Reference |
-|-----------|----------------------|----------------|
-| No .claude directory | ✅ Handled by validation, silent exit | 878 |
-| No role set | ✅ Silent exit with code 0 | 885-887 |
-| Role guide missing | ✅ Silent in quiet, warn in normal | 894-899 |
-| Empty/malformed guide | ✅ Best effort loading | 903 |
-| Missing referenced documents | ✅ Skips gracefully | 922-934 |
-
----
-
-## 6. Testing Strategy Verification
-
-### Unit Test Coverage Areas
-
-Based on the plan, the following should be testable:
-
-| Test Case | Implementation Support | Notes |
-|-----------|----------------------|-------|
-| No role set → Silent exit | ✅ | Lines 885-887 |
-| Role set but guide missing | ✅ | Lines 894-899 |
-| Valid role with guide | ✅ | Full flow 901-1029 |
-| Project role overrides global | ✅ | Via get_preference() |
-| All three output modes work | ✅ | Lines 936-1029 |
-
-### Integration Test Support
-
-| Test Case | Implementation Support |
-|-----------|----------------------|
-| SessionStart hook executes | ✅ post-install.sh configured |
-| Role context in Claude memory | ✅ Output format correct |
-| Multi-scope hierarchy | ✅ Fully implemented |
-
-### Edge Case Test Support
-
-| Test Case | Implementation Support |
-|-----------|----------------------|
-| Empty .claude directory | ✅ Silent exit |
-| Malformed role guide | ✅ Best effort load |
-| Permission denied | ✅ Error handling present |
-| Large role guide | ✅ No size limits |
-| Special characters | ✅ Proper quoting used |
-
----
-
-## 7. Functional Requirements Checklist
-
-### Core Functionality
-
-- [x] **Reads role from preferences** using multi-scope hierarchy
-- [x] **Locates role guide** in config directory with fallbacks
-- [x] **Extracts document references** from role guide
-- [x] **Resolves document paths** (absolute and relative)
-- [x] **Loads document content** with error handling
-- [x] **Outputs in three modes** (quiet, normal, verbose)
-- [x] **Never blocks or fails** (always exit code 0)
-
-### Hook Integration
-
-- [x] **Configured in post-install.sh** with correct order
-- [x] **Uses --quiet flag** for SessionStart
-- [x] **Documented in README** with examples
-- [x] **Documented in setup-plugin-hooks** with all modes
-
-### User Experience
-
-- [x] **Automatic loading** on session start
-- [x] **One-line summary** in quiet mode (visibility without clutter)
-- [x] **Full context** available in normal mode
-- [x] **Metadata available** in verbose mode for debugging
-- [x] **Manual invocation** supported for immediate loading
-
----
-
-## 8. Success Markers
-
-### Critical Success Criteria
-
-All criteria from the plan have been met:
-
-#### ✅ 1. Command Exists and Works
-```bash
-# Test: Command is accessible
-/load-role-context --quiet
-# Expected: ✓ Role context loaded: {role-name} ({count} documents)
-```
-
-#### ✅ 2. Function Implementation Complete
-- All 11 logic flow steps implemented
-- Uses existing helper functions correctly
-- Main dispatcher updated
-- Exit code always 0
-
-#### ✅ 3. Hook Configuration Updated
-- post-install.sh adds command to SessionStart
-- Correct execution order (validate → sync → load)
-- --quiet flag used for clean output
-
-#### ✅ 4. Documentation Complete
-- README.md updated with command reference
-- setup-plugin-hooks.md has all examples
-- CHEATSHEET.md includes command
-- All three output modes documented
-
-#### ✅ 5. Multi-Scope Support
-- Respects project > global hierarchy
-- Uses get_effective_config_dir()
-- Correctly identifies scope in verbose mode
-
-#### ✅ 6. Graceful Degradation
-- No blocking behavior
-- Silent exits on errors
-- Best-effort document loading
-- Always returns code 0
-
----
-
-## 9. Implementation Completeness Score
-
-### Overall Status: ✅ **100% COMPLETE**
-
-| Category | Status | Score |
-|----------|--------|-------|
-| **File Creation** | ✅ Complete | 1/1 |
-| **Script Modifications** | ✅ Complete | 2/2 |
-| **Documentation Updates** | ✅ Complete | 3/3 |
-| **Hook Configuration** | ✅ Complete | 1/1 |
-| **Multi-Scope Support** | ✅ Complete | 3/3 |
-| **Error Handling** | ✅ Complete | 5/5 |
-| **Output Modes** | ✅ Complete | 3/3 |
-| **Edge Cases** | ✅ Complete | 5/5 |
-
-**Total Score**: 23/23 (100%)
-
----
-
-## 10. Validation Commands
-
-### Manual Verification Steps
-
-Run these commands to verify the implementation:
+All optional, override manifest and defaults:
 
 ```bash
-# 1. Verify command exists
-/load-role-context --help
+# Directory names (5 vars)
+RCM_CLAUDE_DIR_NAME=".myorg-claude"
+RCM_ROLE_GUIDES_DIR="personas"
+RCM_BACKUPS_DIR=".rcm-backups"
+RCM_CACHE_DIR=".cache"
+RCM_DOCUMENT_GUIDES_DIR="document-guides"
 
-# 2. Test quiet mode (SessionStart simulation)
-/load-role-context --quiet
+# Config filenames (6 vars)
+RCM_PREFERENCES_FILE="config.json"
+RCM_ORG_LEVEL_FILE="org-structure.json"
+RCM_ROLE_REF_FILE="role-documents.json"
+RCM_ROLE_REF_LOCAL_FILE="role-documents.local.json"
+RCM_SETTINGS_FILE="settings.json"
+RCM_SETTINGS_LOCAL_FILE="settings.local.json"
 
-# 3. Test normal mode (full output)
+# Global locations (2 vars)
+RCM_HOME_CONFIG_DIR="~/.myorg/rcm"
+RCM_SYSTEM_CONFIG_DIR="~/.config/myorg-rcm"
+
+# Plugin structure (2 vars - rare, for relocated installations)
+RCM_TEMPLATES_DIR="/opt/rcm-templates"
+RCM_SCRIPTS_DIR="/opt/rcm/scripts"
+```
+
+## Critical Files
+
+### Files to CREATE (13 new files)
+- `scripts/path-config.sh` - Core configuration library (~350 lines)
+- `schemas/paths-v1.schema.json` - JSON Schema for validation (~200 lines)
+- `commands/configure-paths.sh` - Configuration command wrapper (~200 lines)
+- `commands/configure-paths.md` - Configuration command docs (~400 lines)
+- `commands/show-paths.sh` - Path display command (~100 lines)
+- `commands/show-paths.md` - Path display docs (~150 lines)
+- `docs/PATH-CONFIGURATION.md` - Comprehensive guide (~1000 lines)
+- `docs/MIGRATION-TO-PATH-CONFIG.md` - Migration guide (~300 lines)
+- `tests/test-path-config.sh` - Unit tests (~600 lines, 55 tests)
+- `tests/test-custom-paths-integration.sh` - Integration tests (~800 lines, 50 tests)
+- `tests/test-backward-compatibility.sh` - Compatibility tests (~400 lines, 20 tests)
+- `templates/core/software-org/.claude/paths.json` - Default manifest (~50 lines)
+- `templates/core/startup-org/.claude/paths.json` - Default manifest (~50 lines)
+
+### Files to MODIFY (15 existing files)
+- `scripts/role-manager.sh` - Refactor 34+ path references (~150 lines modified)
+- `scripts/template-manager.sh` - Refactor 4+ path references (~40 lines modified)
+- `scripts/level-detector.sh` - Refactor find_claude_dir + 4 refs (~30 lines modified)
+- `scripts/hierarchy-detector.sh` - Update parent discovery (~20 lines modified)
+- `scripts/doc-validator.sh` - Update document resolution (~15 lines modified)
+- `scripts/post-install.sh` - Update hook installation (~10 lines modified)
+- `commands/validate-setup.md` - Add path validation section (~100 lines added)
+- `CLAUDE.md` - Add path configuration section (~150 lines added)
+- `README.md` - Add quick start for custom paths (~50 lines added)
+- `CHEATSHEET.md` - Add new commands (~80 lines added)
+- `TEMPLATES.md` - Document paths.json (~60 lines added)
+- `commands/init-org-template.md` - Document path customization (~40 lines added)
+- `commands/load-role-context.md` - Update example paths (~20 lines modified)
+- `commands/set-role.md` - Update example paths (~20 lines modified)
+- All `agents/*/agent.md` (6 files) - Update example paths (~10 lines each)
+
+## Key Implementation Constraints
+
+### Backward Compatibility (CRITICAL - Blocking)
+- **Constraint**: Zero breaking changes for v1.6.0 users
+- **Source**: Plan requirement "100% backward compatible"
+- **Verification**: All existing tests pass, defaults match exactly, no forced migration
+- **Example**: User with existing `.claude/` setup must continue working without any changes
+
+### Performance Requirements (High Priority)
+- **Constraint**: path-config loading <5ms, total overhead <10ms per command
+- **Source**: Enterprise requirement for fast command execution
+- **Verification**: `time` measurements, performance test suite
+- **Example**: `time (source scripts/path-config.sh && load_path_config)` must be <5ms
+
+### Security Requirements (Critical)
+- **Constraint**: Reject path traversal (`..`, `/`), null bytes, command injection
+- **Source**: User-provided configuration is untrusted input
+- **Verification**: Security test suite with malicious inputs
+- **Example**: `RCM_CLAUDE_DIR_NAME="../etc"` must be rejected with error
+
+### Code Quality Standards
+- **Constraint**: All scripts pass `bash -n` and `shellcheck`, comprehensive comments
+- **Source**: Existing codebase standards
+- **Verification**: CI checks, manual review
+- **Example**: Every function must have usage comment: `# Usage: function_name arg1 arg2`
+
+## Verification Strategy
+
+### End-to-End Test Scenarios
+
+#### Scenario A: Default Behavior (Backward Compatibility)
+```bash
+# Setup: Clean system, no custom config
+cd /tmp/test-default
+/init-org-template
+/set-role software-engineer
 /load-role-context
 
-# 4. Test verbose mode (with metadata)
-/load-role-context --verbose
+# Verification Commands:
+test -d .claude
+test -d .claude/role-guides
+test -f .claude/preferences.json
+grep -q "software-engineer" .claude/preferences.json
 
-# 5. Verify hook configuration
-cat .claude/settings.json | jq '.hooks.SessionStart'
-
-# 6. Check function exists in role-manager.sh
-grep -n "cmd_load_role_context" scripts/role-manager.sh
-
-# 7. Verify post-install hook setup
-grep -n "load-role-context" scripts/post-install.sh
-
-# 8. Test with no role set
-jq 'del(.user_role)' .claude/preferences.json > /tmp/test.json
-mv /tmp/test.json .claude/preferences.json
-/load-role-context --quiet
-# Expected: Silent exit (code 0)
-
-# 9. Test multi-scope hierarchy
-/set-role --global software-engineer
-cd project
-/set-role backend-engineer
-/load-role-context --verbose
-# Expected: Shows backend-engineer (project override)
+# Expected Result:
+# - .claude directory created (not any other name)
+# - role-guides/ subdirectory exists (not any other name)
+# - preferences.json created (not any other filename)
+# - All commands work identically to v1.6.0
+# - NO paths.json created (not required for defaults)
 ```
 
+#### Scenario B: Environment Variable Override
+```bash
+# Setup: Set environment variables before any operations
+export RCM_CLAUDE_DIR_NAME=".rcm"
+export RCM_ROLE_GUIDES_DIR="personas"
+
+cd /tmp/test-custom-env
+/init-org-template
+/set-role software-engineer
+/load-role-context
+/show-paths
+
+# Verification Commands:
+test -d .rcm
+test -d .rcm/personas
+test -f .rcm/preferences.json
+test ! -d .claude  # Old name must NOT be created
+/show-paths | grep 'claude_dir_name: ".rcm" (from: environment variable)'
+
+# Expected Result:
+# - .rcm directory created (not .claude)
+# - .rcm/personas/ exists (not role-guides)
+# - preferences.json in .rcm/
+# - Role context loads from .rcm/personas/
+# - /show-paths correctly identifies env var as source
+```
+
+#### Scenario C: Manifest Configuration
+```bash
+# Setup: Create manifest before init
+cd /tmp/test-manifest
+mkdir .claude
+cat > .claude/paths.json <<'EOF'
+{
+  "version": "1.0.0",
+  "directories": {
+    "claude_dir_name": ".mycompany-rcm",
+    "role_guides_dir": "agent-guides"
+  }
+}
+EOF
+
+/init-org-template
+/show-paths
+
+# Verification Commands:
+test -d .mycompany-rcm
+test -d .mycompany-rcm/agent-guides
+/show-paths | grep 'claude_dir_name: ".mycompany-rcm" (from: project manifest)'
+
+# Expected Result:
+# - .mycompany-rcm directory created
+# - agent-guides subdirectory exists
+# - Manifest config honored over defaults
+# - /show-paths identifies manifest as source
+```
+
+#### Scenario D: Hybrid - Manifest + Env Var Override
+```bash
+# Setup: Global manifest + env var override
+mkdir -p ~/.config/role-context-manager
+echo '{"directories":{"claude_dir_name":".rcm"}}' > ~/.config/role-context-manager/paths.json
+export RCM_CLAUDE_DIR_NAME=".custom"
+
+cd /tmp/test-hybrid
+/init-org-template
+/show-paths
+
+# Verification Commands:
+test -d .custom  # Env var wins
+test ! -d .rcm   # Manifest value not used
+/show-paths | grep 'claude_dir_name: ".custom" (from: environment variable)'
+
+# Expected Result:
+# - .custom directory created (env var precedence)
+# - .rcm NOT created (manifest overridden)
+# - /show-paths shows env var as source, not manifest
+# - Precedence order respected: env > project > global > default
+```
+
+#### Scenario E: Hierarchical Multi-Tenant Setup
+```bash
+# Setup: Parent and child with different configs
+cd /tmp/enterprise
+mkdir parent-project child-project
+
+cd parent-project
+export RCM_CLAUDE_DIR_NAME=".parent-rcm"
+/init-org-template --root
+
+cd ../child-project
+export RCM_CLAUDE_DIR_NAME=".child-rcm"
+/init-org-template
+
+# Verification Commands:
+test -d ../parent-project/.parent-rcm
+test -d .child-rcm
+grep -q "parent_claude_dir" .child-rcm/organizational-level.json
+
+# Expected Result:
+# - Hierarchy detection works with custom names
+# - Parent filtering respects custom directory names
+# - Both configs isolated and functional
+# - Child detects parent even with non-default name
+```
+
+#### Scenario F: Migration of Existing Setup
+```bash
+# Setup: Existing .claude setup from v1.6.0
+cd /tmp/existing-setup
+mkdir -p .claude/role-guides
+echo '{"user_role":"software-engineer"}' > .claude/preferences.json
+echo 'Test content' > .claude/role-guides/software-engineer-guide.md
+
+/configure-paths --migrate .claude .myorg-rcm
+
+# Verification Commands:
+test -d .myorg-rcm
+test -d .myorg-rcm/role-guides
+test -f .myorg-rcm/preferences.json
+test -f .myorg-rcm/paths.json
+test ! -d .claude  # Old directory removed
+grep -q '"claude_dir_name": ".myorg-rcm"' .myorg-rcm/paths.json
+/set-role software-engineer  # Must still work
+
+# Expected Result:
+# - .myorg-rcm/ exists with all files
+# - .claude/ directory removed
+# - paths.json created with new name
+# - preferences.json migrated intact
+# - /set-role, /load-role-context work with new location
+# - No data loss during migration
+```
+
+### Security Verification
+
+```bash
+# Test 1: Reject path traversal with dots
+echo '{"directories":{"claude_dir_name":"../etc"}}' > .claude/paths.json
+/validate-setup 2>&1 | grep -q "path traversal"
+# Expected: Error detected
+
+# Test 2: Reject path traversal with slash
+export RCM_CLAUDE_DIR_NAME="/etc/passwd"
+/init-org-template 2>&1 | grep -q "invalid"
+# Expected: Error or sanitization
+
+# Test 3: Reject null byte injection
+export RCM_CLAUDE_DIR_NAME=$'.claude\x00/etc/passwd'
+/init-org-template 2>&1 | grep -q "invalid"
+# Expected: Error about invalid characters
+
+# Test 4: Reject slash in directory name
+export RCM_CLAUDE_DIR_NAME=".claude/../../etc"
+/init-org-template 2>&1 | grep -q "invalid"
+# Expected: Error about invalid characters
+
+# Test 5: Accept valid names
+export RCM_CLAUDE_DIR_NAME=".my-org_claude.v2"
+/init-org-template
+test -d .my-org_claude.v2
+# Expected: Success, directory created
+```
+
+### Performance Benchmarks
+
+```bash
+# Benchmark 1: path-config load time
+time bash -c '
+for i in {1..100}; do
+  (source scripts/path-config.sh && load_path_config) > /dev/null
+done
+'
+# Expected: Total <500ms (avg <5ms per iteration)
+
+# Benchmark 2: Command overhead
+time bash -c 'for i in {1..50}; do /show-role-context > /dev/null; done'
+# Expected: <10ms additional overhead per command vs v1.6.0
+
+# Benchmark 3: Cached getter performance
+bash -c '
+source scripts/path-config.sh
+load_path_config
+time for i in {1..1000}; do get_claude_dir_name > /dev/null; done
+'
+# Expected: <100ms total (cached, no file I/O)
+```
+
+## Test Matrix
+
+| Test Category | Test Count | File | Purpose |
+|---------------|------------|------|---------|
+| Unit - Path Config | 55 | test-path-config.sh | Default loading, manifest parsing, env vars, validation, performance |
+| Integration - Custom Paths | 50 | test-custom-paths-integration.sh | E2E workflows with custom names in various scenarios |
+| Backward Compatibility | 20 | test-backward-compatibility.sh | Ensure v1.6.0 setups work unchanged |
+| Security | 10 | test-path-config.sh | Path traversal, injection, sanitization |
+| Performance | 5 | test-path-config-performance.sh | Load time, caching, overhead |
+| **TOTAL** | **140** | | |
+
+## Dependencies
+
+### External Tools
+- `bash` 4.0+ (associative arrays, parameter expansion)
+- `jq` 1.5+ (JSON parsing - optional but recommended)
+- `jsonschema` CLI (optional, for schema validation)
+
+### Internal Dependencies (Load Order)
+1. `scripts/path-config.sh` - MUST be created first, no dependencies
+2. `schemas/paths-v1.schema.json` - For validation, referenced by path-config.sh
+3. All other scripts - Source path-config.sh, call load_path_config
+
+## Risk Mitigation
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Breaking existing setups | High without testing | Critical | 20 backward compat tests, phased rollout |
+| Path traversal vuln | Medium (user config) | High | Strict validation, whitelist patterns only |
+| Performance degradation | Low | Low | Benchmarking required, caching implemented |
+| Complexity creep | Medium | Medium | Centralize in path-config.sh, clear docs |
+| Incomplete refactoring | Medium | High | Grep audit (40+ occurrences), test coverage |
+
+## Timeline
+
+- **Week 1**: Core library (path-config.sh, schema, unit tests)
+- **Week 2-3**: Refactor all scripts (role-manager, template-manager, level-detector, hierarchy-detector)
+- **Week 3**: User commands (/configure-paths, /show-paths, /validate-setup updates)
+- **Week 4**: Templates (add paths.json) + Documentation (PATH-CONFIGURATION.md)
+- **Week 5-6**: Integration tests, backward compat tests, E2E testing, bug fixes
+
+**Total**: 6 weeks from start to verified release
+
 ---
 
-## 11. Files Modified Summary
-
-### New Files Created
-1. ✅ `commands/load-role-context.md` (154 lines)
-
-### Files Modified
-1. ✅ `scripts/role-manager.sh`
-   - Added `cmd_load_role_context()` function (lines 856-1029)
-   - Updated main dispatcher (lines 1295-1297)
-
-2. ✅ `scripts/post-install.sh`
-   - Updated SessionStart hook configuration (lines 95-98)
-   - Updated user notification (line 114)
-
-3. ✅ `commands/setup-plugin-hooks.md`
-   - Updated all hook examples
-   - Added role context loading descriptions
-
-4. ✅ `README.md`
-   - Updated SessionStart Hook section
-   - Added `/load-role-context` command reference
-   - Updated hook examples (minimal, standard, verbose)
-
-5. ✅ `CHEATSHEET.md`
-   - Added command to commands table
-   - Updated hook examples
-   - Added role loading to hook descriptions
-
----
-
-## 12. Gaps and Recommendations
-
-### Implementation Gaps
-
-**Status**: ✅ **NO GAPS IDENTIFIED**
-
-All requirements from the plan have been fully implemented.
-
-### Recommendations for Future Enhancement
-
-These are enhancements beyond the current plan (optional):
-
-1. **Caching**: Add in-session caching to avoid re-reading files
-2. **Role switching**: Add `/switch-role` command for mid-session changes
-3. **Multiple roles**: Support primary + secondary roles
-4. **Smart refresh**: Detect role guide file changes
-5. **Selective loading**: User customization of which documents load
-
-**Note**: These are future enhancements, not gaps in current implementation.
-
----
-
-## 13. Verification Summary
-
-### Implementation Status: ✅ **FULLY IMPLEMENTED**
-
-The "Automatic Role-Guide Loading on SessionStart" feature has been **thoroughly and completely implemented** according to the plan in `docs/IMPLEMENTATION-PLAN-AUTO-ROLE-LOADING.md`.
-
-### Key Achievements
-
-1. ✅ **All files created/modified** as specified in the plan
-2. ✅ **All 11 logic flow steps** implemented correctly
-3. ✅ **All three output modes** working (quiet, normal, verbose)
-4. ✅ **Multi-scope support** fully integrated
-5. ✅ **Graceful degradation** in all error conditions
-6. ✅ **SessionStart hook** configured correctly
-7. ✅ **Documentation** complete and accurate
-8. ✅ **Edge cases** handled properly
-9. ✅ **No blocking behavior** (always exit 0)
-10. ✅ **Testing strategy** supported by implementation
-
-### Confidence Level: **100%**
-
-Based on comprehensive code inspection, the implementation:
-- Matches all plan specifications exactly
-- Follows existing plugin patterns correctly
-- Handles all specified edge cases
-- Provides all three output modes
-- Integrates with multi-scope infrastructure
-- Never blocks SessionStart hooks
-- Is fully documented
-
----
-
-## Conclusion
-
-**The implementation is COMPLETE and PRODUCTION-READY.**
-
-No gaps, missing features, or deviations from the plan were identified. The feature can be deployed with confidence.
-
----
-
-**Next Steps**: Proceed to Step 3 (Decompose) to create atomic verification tasks, or conclude that manual verification confirms complete implementation.
+**Status**: READY FOR DECOMPOSITION
+**Next Command**: `/workflow-weaver:decompose` to generate `tasks.json`

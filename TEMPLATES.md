@@ -21,7 +21,7 @@ Templates are pre-configured organizational frameworks that include:
 - **Role guides** - Guidance for Claude Code to assist specific roles
 - **Document guides** - Templates for generating organizational documents
 - **Organizational documents** - Standards, policies, strategies, OKRs
-- **Configuration** - Organizational level, role references, preferences
+- **Configuration** - Organizational level, role references, preferences, path customization
 
 Templates help teams get started quickly with best practices and consistent structures.
 
@@ -299,9 +299,37 @@ template-name/
 │   ├── document-guides/       # Optional: Document generation guides
 │   │   └── *.md
 │   ├── organizational-level.json  # Optional: Default org level
-│   └── role-references.json   # Optional: Role-to-document mappings
+│   ├── role-references.json   # Optional: Role-to-document mappings
+│   └── paths.json             # Optional: Custom directory path configuration
 └── *.md                       # Optional: Organizational documents
 ```
+
+### Path Configuration in Templates
+
+Templates can include a `paths.json` file to specify custom directory names. This allows organizations to customize the `.claude` directory name and internal structure.
+
+**Location**: `.claude/paths.json`
+
+**Format**:
+```json
+{
+  "claude_dir_name": ".myorg",
+  "role_guides_dir": "guides",
+  "version": "1.0.0",
+  "description": "Custom path configuration"
+}
+```
+
+**When to Include**:
+- Template is for organization with specific naming standards
+- Template targets environment with `.claude` conflicts
+- Template is migration from legacy system
+
+**When to Omit**:
+- Template should work with any directory names (most common)
+- Organization uses default `.claude` naming
+
+See [Path Configuration](docs/PATH-CONFIGURATION.md) for complete details.
 
 ### Manifest File (`manifest.json`)
 

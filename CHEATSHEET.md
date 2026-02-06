@@ -78,6 +78,69 @@
 
 ---
 
+#### `/configure-paths [OPTIONS]`
+
+**Purpose:** Configure custom directory names for .claude and role-guides directories
+
+**Options:**
+- `--claude-dir=NAME` - Set claude directory name (default: .claude)
+- `--role-guides-dir=NAME` - Set role guides directory name (default: role-guides)
+- `--global` - Create configuration in $HOME (user-wide)
+- `--local` - Create configuration in current directory (default)
+- `--dry-run` - Preview changes without applying
+- `--migrate OLD NEW` - Migrate existing directories to new names
+
+**Examples:**
+```bash
+# Set custom directory names
+/configure-paths --claude-dir=.myorg --role-guides-dir=guides
+
+# Create global configuration
+/configure-paths --global --claude-dir=.myorg
+
+# Preview migration
+/configure-paths --dry-run --migrate .claude .myorg-rcm
+
+# Execute migration
+/configure-paths --migrate .claude .myorg-rcm
+```
+
+**When to use:**
+- Match organizational directory naming standards
+- Avoid conflicts with other tools
+- Rebrand internal tooling
+- Migrate from existing setup
+
+See [Path Configuration](docs/PATH-CONFIGURATION.md) for complete details.
+
+---
+
+#### `/show-paths [OPTIONS]`
+
+**Purpose:** Display current path configuration
+
+**Options:**
+- `--verbose` - Show detailed configuration including source
+- `--json` - Output in JSON format
+
+**Output:**
+- Current claude directory name
+- Current role guides directory name
+- Configuration source (environment, local manifest, global manifest, or defaults)
+
+**Example:**
+```bash
+/show-paths
+
+# Output:
+# Path Configuration:
+#   Claude directory: .myorg
+#   Role guides directory: guides
+#   Source: Local manifest (./.myorg/paths.json)
+```
+
+---
+
 ### Agent: Template Setup Assistant
 
 **Invoked by:** `/init-org-template`
@@ -335,6 +398,8 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 | `/create-role-guide` | Create custom role guide | (none) |
 | `/validate-setup` | Validate .claude directory | `--quick`, `--fix`, `--silent`, `--quiet`, `--summary` |
 | `/sync-template` | Synchronize template updates | `--check-only`, `--quiet`, `--preview`, `--force` |
+| `/configure-paths` | Configure custom directory names | `--claude-dir`, `--role-guides-dir`, `--migrate`, `--global`, `--local`, `--dry-run` |
+| `/show-paths` | Display path configuration | `--verbose`, `--json` |
 
 ### All Agents
 

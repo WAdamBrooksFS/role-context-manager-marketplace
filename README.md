@@ -15,6 +15,7 @@ This plugin helps teams organize and load documentation based on roles within an
 - **Team defaults + user overrides**: Share team configurations while allowing personal customizations
 - **Smart level detection**: Automatically detects organizational level or prompts when ambiguous
 - **Integration with role guides**: Reads document references from existing role-guide files
+- **Custom path configuration**: Customize directory names (`.claude`, `role-guides`) to match organizational standards
 
 ### New in v1.3.0: Complete Template Bundles & Multi-Scope Configuration
 - **Multi-Scope Configuration**: Global and project-level configuration support
@@ -235,6 +236,66 @@ cd special-project
 ```
 
 See [SCOPES.md](SCOPES.md) for detailed guidance on choosing the right approach.
+
+### Custom Path Configuration (Optional)
+
+Customize directory names to match your organization's standards. This is useful when your organization has existing naming conventions, you need to avoid conflicts with other tools, or you're migrating from an existing setup.
+
+**Quick Start - Using the Command**:
+
+```bash
+# Interactive configuration
+/configure-paths
+
+# Set custom directory names directly
+/configure-paths --claude-dir=.myorg --role-guides-dir=guides
+
+# Create global configuration (applies everywhere)
+/configure-paths --global --claude-dir=.myorg
+
+# Preview changes without applying
+/configure-paths --dry-run --claude-dir=.custom
+
+# Verify current configuration
+/show-paths
+```
+
+**Quick Start - Using Environment Variables**:
+
+```bash
+# Temporary override for one session
+export RCM_CLAUDE_DIR_NAME=".myorg"
+export RCM_ROLE_GUIDES_DIR="guides"
+
+# Make permanent (add to ~/.bashrc or ~/.zshrc)
+echo 'export RCM_CLAUDE_DIR_NAME=".myorg"' >> ~/.bashrc
+```
+
+**Migrating Existing Directories**:
+
+```bash
+# Preview migration
+/configure-paths --dry-run --migrate .claude .myorg
+
+# Execute migration
+/configure-paths --migrate .claude .myorg
+```
+
+**Configuration Hierarchy**:
+
+Path configuration follows this priority order (highest to lowest):
+1. **Environment Variables** - `RCM_CLAUDE_DIR_NAME`, `RCM_ROLE_GUIDES_DIR`
+2. **Local Manifest** - `./<claude-dir>/paths.json` in current directory
+3. **Global Manifest** - `$HOME/<claude-dir>/paths.json`
+4. **Default Values** - `.claude` and `role-guides`
+
+**When to Customize Paths**:
+- Your organization uses branded directory names (e.g., `.acme-ai` instead of `.claude`)
+- You need to avoid conflicts with other Claude-based tools
+- You're migrating from an existing system with different naming
+- You want to comply with organizational naming standards
+
+See [Path Configuration](docs/PATH-CONFIGURATION.md) for complete customization options, security constraints, and advanced scenarios.
 
 ### For New Users (v1.1.0+): Initialize from Template
 

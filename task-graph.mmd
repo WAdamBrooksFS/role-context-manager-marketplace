@@ -1,33 +1,74 @@
 graph TD
-    V1[V1: Verify Command Documentation]
-    V2[V2: Verify Function Implementation]
-    V3[V3: Verify Hook Configuration]
-    V4[V4: Verify setup-plugin-hooks.md]
-    V5[V5: Verify README.md]
-    V6[V6: Verify CHEATSHEET.md]
-    V7[V7: Test All Output Modes]
-    V8[V8: Test No Role Edge Case]
-    V9[V9: Test Document Loading]
-    V10[V10: Verify Helper Functions]
+    T1[T1: Create path-config.sh core library]
+    T2[T2: Create paths JSON schema]
+    T3[T3: Create unit tests for path-config]
+    T4[T4: Create configure-paths command]
+    T5[T5: Create show-paths command]
+    T6[T6: Refactor role-manager.sh]
+    T7[T7: Refactor template-manager, level-detector, hierarchy-detector]
+    T8[T8: Refactor doc-validator and post-install]
+    T9[T9: Add paths.json to templates]
+    T10[T10: Create PATH-CONFIGURATION.md guide]
+    T11[T11: Update existing documentation]
+    T12[T12: Create integration test suite]
+    T13[T13: Create backward compatibility test suite]
+    T14[T14: Create MIGRATION guide]
+    T15[T15: Create performance test suite]
 
-    %% Dependencies
-    V1 --> V2
-    V1 --> V7
-    V2 --> V7
-    V3 --> V7
-    V10 --> V7
-    V7 --> V8
-    V7 --> V9
+    %% Phase 1: Foundation
+    T1 --> T2
+    T1 --> T3
+    T1 --> T6
+    T1 --> T7
+    T1 --> T8
+
+    %% Phase 2: Core Testing
+    T2 --> T3
+    T2 --> T4
+    T2 --> T9
+    T2 --> T10
+
+    %% Phase 3: User Commands (Parallel)
+    %% T4 and T5 can run in parallel after T2
+
+    %% Phase 4: Script Refactoring
+    T3 --> T6
+    T3 --> T7
+    T3 --> T8
+
+    %% Phase 5: Templates & Documentation (Parallel)
+    T10 --> T11
+    T10 --> T14
+
+    %% Phase 6: Integration Testing
+    T1 --> T12
+    T3 --> T12
+    T4 --> T12
+    T5 --> T12
+    T6 --> T12
+    T7 --> T12
+    T8 --> T12
+
+    T1 --> T13
+    T3 --> T13
+    T6 --> T13
+    T7 --> T13
+    T8 --> T13
+
+    T1 --> T15
+    T3 --> T15
 
     %% Styling
-    classDef phase1 fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef phase2 fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef phase3 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef phase4 fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
-    classDef phase5 fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef foundation fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef testing fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef command fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
+    classDef refactor fill:#e8f5e9,stroke:#43a047,stroke-width:2px
+    classDef docs fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef integration fill:#fff9c4,stroke:#f9a825,stroke-width:2px
 
-    class V1,V10 phase1
-    class V2,V3 phase2
-    class V4,V5,V6 phase3
-    class V7 phase4
-    class V8,V9 phase5
+    class T1,T2 foundation
+    class T3,T13,T15 testing
+    class T4,T5 command
+    class T6,T7,T8 refactor
+    class T9,T10,T11,T14 docs
+    class T12 integration

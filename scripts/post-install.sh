@@ -18,32 +18,41 @@
 
 set -euo pipefail
 
+# Source path-config.sh library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./path-config.sh
+source "$SCRIPT_DIR/path-config.sh"
+load_path_config
+
+# Get dynamic claude directory name
+CLAUDE_DIR_NAME="$(get_claude_dir_name)"
+
 # Get scope from environment variable (default: auto)
 SCOPE="${SCOPE:-auto}"
 
 # Function to check if we're in a project context
 is_project_context() {
-    [[ -d ".claude" ]] || [[ -d "./.claude" ]]
+    [[ -d "$CLAUDE_DIR_NAME" ]] || [[ -d "./$CLAUDE_DIR_NAME" ]]
 }
 
 # Determine target directory based on scope
 determine_target_dir() {
     case "$SCOPE" in
         global)
-            echo "$HOME/.claude"
+            echo "$HOME/$CLAUDE_DIR_NAME"
             ;;
         project)
             if ! is_project_context; then
                 echo "Error: Not in a project context. Cannot use --project scope." >&2
                 exit 1
             fi
-            echo ".claude"
+            echo "$CLAUDE_DIR_NAME"
             ;;
         auto)
             if is_project_context; then
-                echo ".claude"
+                echo "$CLAUDE_DIR_NAME"
             else
-                echo "$HOME/.claude"
+                echo "$HOME/$CLAUDE_DIR_NAME"
             fi
             ;;
         *)
@@ -60,12 +69,12 @@ SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 MARKER_FILE="$CLAUDE_DIR/.role-context-manager-setup-complete"
 
 # Determine actual scope for display
-if [[ "$CLAUDE_DIR" == "$HOME/.claude" ]]; then
+if [[ "$CLAUDE_DIR" == "$HOME/$CLAUDE_DIR_NAME" ]]; then
     ACTUAL_SCOPE="global"
-    SCOPE_DISPLAY="Global (~/.claude/)"
+    SCOPE_DISPLAY="Global (~/$CLAUDE_DIR_NAME/)"
 else
     ACTUAL_SCOPE="project"
-    SCOPE_DISPLAY="Project (./.claude/)"
+    SCOPE_DISPLAY="Project (./$CLAUDE_DIR_NAME/)"
 fi
 
 # Check if already set up

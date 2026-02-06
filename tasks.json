@@ -1,79 +1,90 @@
 {
-  "$schema": "./task-schema.json",
   "version": "1.0",
   "blueprint_source": "./WEAVER_BLUEPRINT.md",
-  "generated_at": "2026-01-23T10:30:00Z",
-  "thread_id": "auto-role-loading-verification",
+  "generated_at": "2026-02-05T22:30:50Z",
+  "thread_id": "path-config-manifest-system",
 
   "metadata": {
-    "total_tasks": 10,
-    "estimated_agent_loops": 10,
-    "critical_path": ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10"],
+    "total_tasks": 15,
+    "estimated_agent_loops": 15,
+    "critical_path": ["T1", "T2", "T3", "T6", "T7", "T8", "T12", "T13"],
     "parallelizable_groups": [
-      ["V4", "V5", "V6"]
+      ["T4", "T5"],
+      ["T9", "T10", "T11"],
+      ["T14", "T15"]
     ]
   },
 
   "tasks": [
     {
-      "id": "V1",
-      "name": "Verify command documentation exists and is complete",
-      "type": "verification",
-      "description": "Verify that commands/load-role-context.md exists and contains all required sections: purpose, usage, options, behavior, output modes, Claude instructions",
+      "id": "T1",
+      "name": "Create path-config.sh core library",
+      "type": "implementation",
+      "description": "Implement the core path configuration library with manifest parsing, environment variable support, caching, and validation. This is the foundation for all path customization.",
       "priority": 1,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 154,
-        "concerns": ["documentation-verification"],
-        "within_limits": true
+        "estimated_lines": 350,
+        "concerns": ["path-configuration"],
+        "within_limits": false,
+        "note": "Exceeds 300 line limit but cannot be meaningfully split as it's a cohesive configuration module"
       },
 
       "target_files": [
         {
-          "path": "commands/load-role-context.md",
-          "action": "READ",
-          "purpose": "Verify command documentation completeness"
+          "path": "scripts/path-config.sh",
+          "action": "CREATE",
+          "purpose": "Core path configuration library with manifest parsing, env var support, validation, and caching"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "commands/load-role-context.md"
+          "scripts/path-config.sh"
         ],
         "dependencies": [],
         "exemplars": [
           {
-            "path": "commands/show-role-context.md",
-            "reason": "Shows existing command documentation pattern"
+            "path": "scripts/level-detector.sh",
+            "reason": "Shows existing bash library pattern with functions and error handling"
+          },
+          {
+            "path": "scripts/role-manager.sh",
+            "reason": "Shows existing configuration file handling patterns"
           }
         ],
         "test_utilities": [],
-        "total_files": 2,
-        "estimated_tokens": 3000
+        "total_files": 3,
+        "estimated_tokens": 4500
       },
 
       "constraints": [
         {
-          "rule": "Must document all three output modes (--quiet, normal, --verbose)",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "### Options: --quiet, --verbose"
+          "rule": "Follow existing bash function documentation pattern",
+          "source": "scripts/level-detector.sh",
+          "example": "# Usage: function_name arg1 arg2\\n# Returns: description\\n# Exits: non-zero on error"
         },
         {
-          "rule": "Must explain multi-scope hierarchy",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "Project role overrides global role"
+          "rule": "Use associative arrays for caching (bash 4.0+)",
+          "source": "Blueprint requirement",
+          "example": "declare -gA PATH_CONFIG_CACHE"
         },
         {
-          "rule": "Must document SessionStart hook integration",
-          "source": "WEAVER_BLUEPRINT.md section 1",
-          "example": "hooks.SessionStart configuration examples"
+          "rule": "Validate all user inputs against path traversal",
+          "source": "Security requirements in blueprint",
+          "example": "Reject paths containing .. or / or null bytes"
+        },
+        {
+          "rule": "Load time must be <5ms for performance",
+          "source": "Performance requirements in blueprint",
+          "example": "Use caching to avoid repeated file reads"
         }
       ],
 
       "validation": {
-        "command": "test -f commands/load-role-context.md && grep -q '## Purpose' commands/load-role-context.md && grep -q '## Usage' commands/load-role-context.md && grep -q -- '--quiet' commands/load-role-context.md && grep -q -- '--verbose' commands/load-role-context.md && grep -q 'Multi-Scope' commands/load-role-context.md && grep -q 'SessionStart' commands/load-role-context.md",
-        "expected_outcome": "All required sections and flags are documented",
+        "command": "bash -n scripts/path-config.sh && shellcheck scripts/path-config.sh",
+        "expected_outcome": "Syntax check passes and shellcheck reports no errors",
         "timeout_seconds": 30,
         "retry_on_failure": false
       },
@@ -81,49 +92,447 @@
       "success_markers": [
         {
           "type": "file_exists",
-          "path": "commands/load-role-context.md"
-        },
-        {
-          "type": "content_contains",
-          "file": "commands/load-role-context.md",
-          "patterns": ["## Purpose", "## Usage", "--quiet", "--verbose", "Multi-Scope", "SessionStart"]
+          "path": "scripts/path-config.sh"
         },
         {
           "type": "command_succeeds",
-          "command": "test -f commands/load-role-context.md"
+          "command": "bash -n scripts/path-config.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "shellcheck scripts/path-config.sh"
+        },
+        {
+          "type": "exports_exist",
+          "file": "scripts/path-config.sh",
+          "exports": ["load_path_config", "get_claude_dir_name", "get_role_guides_dir", "validate_path_config"]
         }
       ],
 
       "dependencies": {
         "depends_on": [],
-        "blocks": ["V2", "V7"]
+        "blocks": ["T2", "T3", "T6", "T7", "T8"]
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "configuration-management", "security"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["scripts/path-config.sh"],
+        "files_to_restore": []
       }
     },
 
     {
-      "id": "V2",
-      "name": "Verify cmd_load_role_context function implementation",
-      "type": "verification",
-      "description": "Verify that scripts/role-manager.sh contains cmd_load_role_context() function with all 11 logic flow steps from the plan",
+      "id": "T2",
+      "name": "Create paths JSON schema",
+      "type": "implementation",
+      "description": "Create JSON Schema for paths.json manifest validation. Defines structure, required fields, and constraints for path configuration files.",
       "priority": 2,
 
       "atomicity": {
         "file_count": 1,
-        "estimated_lines": 174,
-        "concerns": ["function-verification"],
+        "estimated_lines": 200,
+        "concerns": ["schema-definition"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "schemas/paths-v1.schema.json",
+          "action": "CREATE",
+          "purpose": "JSON Schema v7 definition for path configuration manifest validation"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "schemas/paths-v1.schema.json"
+        ],
+        "dependencies": [],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 1,
+        "estimated_tokens": 1200
+      },
+
+      "constraints": [
+        {
+          "rule": "Use JSON Schema Draft 7",
+          "source": "Industry standard",
+          "example": "\"$schema\": \"http://json-schema.org/draft-07/schema#\""
+        },
+        {
+          "rule": "Include pattern validation for directory names",
+          "source": "Security requirements",
+          "example": "\"pattern\": \"^[a-zA-Z0-9._-]+$\" to reject path traversal"
+        },
+        {
+          "rule": "All fields optional with defaults for backward compatibility",
+          "source": "Backward compatibility requirement",
+          "example": "No required fields at top level"
+        }
+      ],
+
+      "validation": {
+        "command": "jq empty schemas/paths-v1.schema.json",
+        "expected_outcome": "Valid JSON with no parse errors",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "schemas/paths-v1.schema.json"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "jq empty schemas/paths-v1.schema.json"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1"],
+        "blocks": ["T3", "T4"]
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["json-schema", "validation"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["schemas/paths-v1.schema.json"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T3",
+      "name": "Create unit tests for path-config",
+      "type": "test-first",
+      "description": "Comprehensive unit test suite for path-config.sh covering default loading, manifest parsing, env variables, validation, caching, and performance (55 tests).",
+      "priority": 3,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 600,
+        "concerns": ["testing"],
+        "within_limits": false,
+        "note": "Exceeds 300 line limit but critical for validation; represents 55 atomic test cases"
+      },
+
+      "target_files": [
+        {
+          "path": "tests/test-path-config.sh",
+          "action": "CREATE",
+          "purpose": "Unit test suite for path-config.sh with 55 test cases covering all functionality"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "tests/test-path-config.sh"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "tests/test-runner.sh",
+            "reason": "Shows existing test framework and assertion patterns"
+          }
+        ],
+        "test_utilities": [
+          "tests/test-runner.sh"
+        ],
+        "total_files": 3,
+        "estimated_tokens": 5000
+      },
+
+      "constraints": [
+        {
+          "rule": "Follow existing test framework pattern",
+          "source": "tests/test-runner.sh",
+          "example": "Use setup/teardown functions, assert_equals, assert_file_exists"
+        },
+        {
+          "rule": "Test all security scenarios from blueprint",
+          "source": "Security verification section",
+          "example": "Path traversal, null bytes, command injection, slash rejection"
+        },
+        {
+          "rule": "Include performance benchmarks",
+          "source": "Performance requirements",
+          "example": "Load time <5ms, cached getter <0.1ms"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n tests/test-path-config.sh && bash tests/test-path-config.sh",
+        "expected_outcome": "Syntax valid and all 55 tests pass",
+        "timeout_seconds": 120,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "tests/test-path-config.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n tests/test-path-config.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash tests/test-path-config.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1", "T2"],
+        "blocks": ["T6", "T7", "T8"]
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "testing", "security-testing"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["tests/test-path-config.sh"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T4",
+      "name": "Create configure-paths command",
+      "type": "implementation",
+      "description": "Implement /configure-paths command (shell script + markdown docs) for interactive path configuration and migration from existing .claude directories.",
+      "priority": 4,
+
+      "atomicity": {
+        "file_count": 2,
+        "estimated_lines": 600,
+        "concerns": ["command-implementation"],
+        "within_limits": false,
+        "note": "Exceeds line limit but cohesive: one command with docs"
+      },
+
+      "target_files": [
+        {
+          "path": "commands/configure-paths.sh",
+          "action": "CREATE",
+          "purpose": "Command implementation for path configuration and migration"
+        },
+        {
+          "path": "commands/configure-paths.md",
+          "action": "CREATE",
+          "purpose": "Command documentation with usage examples"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "commands/configure-paths.sh",
+          "commands/configure-paths.md"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "commands/load-role-context.md",
+            "reason": "Shows existing command documentation format"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 4,
+        "estimated_tokens": 6000
+      },
+
+      "constraints": [
+        {
+          "rule": "Follow existing command documentation structure",
+          "source": "commands/load-role-context.md",
+          "example": "Include Invocation, Purpose, Options, Examples, Error Handling sections"
+        },
+        {
+          "rule": "Support --migrate flag for directory renaming",
+          "source": "Migration scenario F in blueprint",
+          "example": "/configure-paths --migrate .claude .myorg-rcm"
+        },
+        {
+          "rule": "Validate all inputs before making changes",
+          "source": "Security requirements",
+          "example": "Reject invalid directory names before creating files"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n commands/configure-paths.sh && shellcheck commands/configure-paths.sh",
+        "expected_outcome": "Syntax valid and shellcheck passes",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "commands/configure-paths.sh"
+        },
+        {
+          "type": "file_exists",
+          "path": "commands/configure-paths.md"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n commands/configure-paths.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T2"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "cli-design", "documentation"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["commands/configure-paths.sh", "commands/configure-paths.md"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T5",
+      "name": "Create show-paths command",
+      "type": "implementation",
+      "description": "Implement /show-paths command (shell script + markdown docs) to display current path configuration with source attribution (env var, manifest, or default).",
+      "priority": 5,
+
+      "atomicity": {
+        "file_count": 2,
+        "estimated_lines": 250,
+        "concerns": ["command-implementation"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "commands/show-paths.sh",
+          "action": "CREATE",
+          "purpose": "Command to display current path configuration"
+        },
+        {
+          "path": "commands/show-paths.md",
+          "action": "CREATE",
+          "purpose": "Command documentation"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "commands/show-paths.sh",
+          "commands/show-paths.md"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "commands/load-role-context.md",
+            "reason": "Command documentation format"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 4,
+        "estimated_tokens": 3500
+      },
+
+      "constraints": [
+        {
+          "rule": "Display source attribution for each config value",
+          "source": "Scenarios B, C, D in blueprint",
+          "example": "claude_dir_name: \".rcm\" (from: environment variable)"
+        },
+        {
+          "rule": "Support --json flag for machine-readable output",
+          "source": "Integration requirement",
+          "example": "/show-paths --json outputs valid JSON"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n commands/show-paths.sh && shellcheck commands/show-paths.sh",
+        "expected_outcome": "Syntax valid and shellcheck passes",
+        "timeout_seconds": 30,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "commands/show-paths.sh"
+        },
+        {
+          "type": "file_exists",
+          "path": "commands/show-paths.md"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n commands/show-paths.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T2"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "cli-design", "documentation"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["commands/show-paths.sh", "commands/show-paths.md"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T6",
+      "name": "Refactor role-manager.sh for path-config",
+      "type": "implementation",
+      "description": "Refactor role-manager.sh to use path-config.sh library, replacing 34+ hardcoded .claude references with dynamic path resolution.",
+      "priority": 6,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 150,
+        "concerns": ["refactoring"],
         "within_limits": true
       },
 
       "target_files": [
         {
           "path": "scripts/role-manager.sh",
-          "action": "READ",
-          "purpose": "Verify function implementation completeness"
+          "action": "MODIFY",
+          "purpose": "Replace hardcoded paths with path-config.sh getters"
         }
       ],
 
@@ -131,134 +540,241 @@
         "direct_targets": [
           "scripts/role-manager.sh"
         ],
-        "dependencies": [],
-        "exemplars": [
-          {
-            "path": "docs/IMPLEMENTATION-PLAN-AUTO-ROLE-LOADING.md",
-            "reason": "Contains the 11 logic flow steps to verify"
-          }
+        "dependencies": [
+          "scripts/path-config.sh"
         ],
+        "exemplars": [],
         "test_utilities": [],
         "total_files": 2,
-        "estimated_tokens": 5000
+        "estimated_tokens": 8000
       },
 
       "constraints": [
         {
-          "rule": "Function must parse three modes: quiet, normal, verbose",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "case \"$1\" in --quiet|--verbose)"
+          "rule": "Source path-config.sh at script start",
+          "source": "Internal dependencies",
+          "example": "source \"$(dirname \"$0\")/path-config.sh\"\\nload_path_config"
         },
         {
-          "rule": "Must use get_effective_config_dir()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "config_dir=\"$(get_effective_config_dir)\""
+          "rule": "Replace all .claude hardcoded references",
+          "source": "Blueprint requirement",
+          "example": "Change '.claude' to \"$(get_claude_dir_name)\""
         },
         {
-          "rule": "Must use extract_document_references()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "doc_refs_json=\"$(extract_document_references \"$role_guide\")\""
-        },
-        {
-          "rule": "Must always exit with code 0 (never block)",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "exit 0"
+          "rule": "Maintain 100% backward compatibility",
+          "source": "Backward compatibility constraint",
+          "example": "Behavior unchanged for users with default config"
         }
       ],
 
       "validation": {
-        "command": "grep -q 'cmd_load_role_context()' scripts/role-manager.sh && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_effective_config_dir' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'get_preference' && grep -A 200 'cmd_load_role_context()' scripts/role-manager.sh | grep -q 'extract_document_references' && grep -q 'load|load-role-context)' scripts/role-manager.sh",
-        "expected_outcome": "Function exists with all required helper function calls and dispatcher entry",
+        "command": "bash -n scripts/role-manager.sh && shellcheck scripts/role-manager.sh",
+        "expected_outcome": "Syntax valid and shellcheck passes",
         "timeout_seconds": 30,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "cmd_load_role_context"
-        },
-        {
-          "type": "content_contains",
-          "file": "scripts/role-manager.sh",
-          "patterns": ["cmd_load_role_context()", "get_effective_config_dir", "get_preference", "extract_document_references", "load|load-role-context)"]
+          "type": "command_succeeds",
+          "command": "bash -n scripts/role-manager.sh"
         },
         {
           "type": "command_succeeds",
-          "command": "bash -n scripts/role-manager.sh"
+          "command": "shellcheck scripts/role-manager.sh"
+        },
+        {
+          "type": "grep_absent",
+          "file": "scripts/role-manager.sh",
+          "pattern": "\"\\.claude\"",
+          "reason": "No hardcoded .claude strings should remain"
         }
       ],
 
       "dependencies": {
-        "depends_on": ["V1"],
-        "blocks": ["V7"]
+        "depends_on": ["T1", "T3"],
+        "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "refactoring"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["scripts/role-manager.sh"]
       }
     },
 
     {
-      "id": "V3",
-      "name": "Verify SessionStart hook configuration",
-      "type": "verification",
-      "description": "Verify that scripts/post-install.sh configures SessionStart hook with all three commands in correct order: validate, sync, load-role-context",
-      "priority": 3,
+      "id": "T7",
+      "name": "Refactor template-manager, level-detector, hierarchy-detector",
+      "type": "implementation",
+      "description": "Refactor template-manager.sh, level-detector.sh, and hierarchy-detector.sh to use path-config.sh library (combined ~90 lines of changes).",
+      "priority": 7,
 
       "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["hook-configuration"],
+        "file_count": 3,
+        "estimated_lines": 90,
+        "concerns": ["refactoring"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "scripts/post-install.sh",
-          "action": "READ",
-          "purpose": "Verify hook configuration"
+          "path": "scripts/template-manager.sh",
+          "action": "MODIFY",
+          "purpose": "Replace 4+ hardcoded path references"
+        },
+        {
+          "path": "scripts/level-detector.sh",
+          "action": "MODIFY",
+          "purpose": "Refactor find_claude_dir function and 4 references"
+        },
+        {
+          "path": "scripts/hierarchy-detector.sh",
+          "action": "MODIFY",
+          "purpose": "Update parent discovery logic"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "scripts/post-install.sh"
+          "scripts/template-manager.sh",
+          "scripts/level-detector.sh",
+          "scripts/hierarchy-detector.sh"
         ],
-        "dependencies": [],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
         "exemplars": [],
         "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 1500
+        "total_files": 4,
+        "estimated_tokens": 10000
       },
 
       "constraints": [
         {
-          "rule": "Must include /load-role-context --quiet as third command",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "\"/load-role-context --quiet\""
+          "rule": "Source path-config.sh in each script",
+          "source": "Internal dependencies",
+          "example": "source \"$(dirname \"$0\")/path-config.sh\""
         },
         {
-          "rule": "Hook order: validate → sync → load",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "[\"/validate-setup --quiet\", \"/sync-template --check-only\", \"/load-role-context --quiet\"]"
+          "rule": "Update find_claude_dir to use dynamic name",
+          "source": "level-detector.sh refactoring",
+          "example": "local claude_dir=$(get_claude_dir_name)"
+        },
+        {
+          "rule": "Maintain backward compatibility",
+          "source": "Critical constraint",
+          "example": "Behavior unchanged for default config"
         }
       ],
 
       "validation": {
-        "command": "grep -A 3 'hooks.SessionStart' scripts/post-install.sh | grep -q '/load-role-context --quiet' && grep -B 1 '/load-role-context --quiet' scripts/post-install.sh | grep -q '/sync-template --check-only'",
-        "expected_outcome": "Hook configuration includes load-role-context as third command",
+        "command": "bash -n scripts/template-manager.sh && bash -n scripts/level-detector.sh && bash -n scripts/hierarchy-detector.sh && shellcheck scripts/template-manager.sh scripts/level-detector.sh scripts/hierarchy-detector.sh",
+        "expected_outcome": "All scripts pass syntax and shellcheck",
+        "timeout_seconds": 45,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/template-manager.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/level-detector.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash -n scripts/hierarchy-detector.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1", "T3"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "refactoring"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["scripts/template-manager.sh", "scripts/level-detector.sh", "scripts/hierarchy-detector.sh"]
+      }
+    },
+
+    {
+      "id": "T8",
+      "name": "Refactor doc-validator and post-install",
+      "type": "implementation",
+      "description": "Refactor doc-validator.sh and post-install.sh to use path-config.sh library (combined ~25 lines of changes).",
+      "priority": 8,
+
+      "atomicity": {
+        "file_count": 2,
+        "estimated_lines": 25,
+        "concerns": ["refactoring"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "scripts/doc-validator.sh",
+          "action": "MODIFY",
+          "purpose": "Update document resolution paths"
+        },
+        {
+          "path": "scripts/post-install.sh",
+          "action": "MODIFY",
+          "purpose": "Update hook installation paths"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "scripts/doc-validator.sh",
+          "scripts/post-install.sh"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 3,
+        "estimated_tokens": 6000
+      },
+
+      "constraints": [
+        {
+          "rule": "Source path-config.sh in each script",
+          "source": "Internal dependencies",
+          "example": "source path-config.sh && load_path_config"
+        },
+        {
+          "rule": "Maintain backward compatibility",
+          "source": "Critical constraint",
+          "example": "Behavior unchanged for default config"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n scripts/doc-validator.sh && bash -n scripts/post-install.sh && shellcheck scripts/doc-validator.sh scripts/post-install.sh",
+        "expected_outcome": "Both scripts pass syntax and shellcheck",
         "timeout_seconds": 30,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "content_contains",
-          "file": "scripts/post-install.sh",
-          "patterns": ["/load-role-context --quiet", "hooks.SessionStart"]
+          "type": "command_succeeds",
+          "command": "bash -n scripts/doc-validator.sh"
         },
         {
           "type": "command_succeeds",
@@ -267,628 +783,738 @@
       ],
 
       "dependencies": {
-        "depends_on": [],
-        "blocks": ["V7"]
+        "depends_on": ["T1", "T3"],
+        "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["bash", "refactoring"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": ["scripts/doc-validator.sh", "scripts/post-install.sh"]
       }
     },
 
     {
-      "id": "V4",
-      "name": "Verify setup-plugin-hooks.md documentation updates",
-      "type": "verification",
-      "description": "Verify that commands/setup-plugin-hooks.md includes load-role-context in all hook examples (minimal, standard, verbose)",
-      "priority": 4,
+      "id": "T9",
+      "name": "Add paths.json to templates",
+      "type": "implementation",
+      "description": "Add default paths.json manifest files to software-org and startup-org templates in templates/core/ directory.",
+      "priority": 9,
 
       "atomicity": {
-        "file_count": 1,
+        "file_count": 2,
         "estimated_lines": 100,
-        "concerns": ["documentation-verification"],
+        "concerns": ["template-files"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "commands/setup-plugin-hooks.md",
-          "action": "READ",
-          "purpose": "Verify hook documentation completeness"
+          "path": "templates/core/software-org/.claude/paths.json",
+          "action": "CREATE",
+          "purpose": "Default path configuration for software-org template"
+        },
+        {
+          "path": "templates/core/startup-org/.claude/paths.json",
+          "action": "CREATE",
+          "purpose": "Default path configuration for startup-org template"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "commands/setup-plugin-hooks.md"
+          "templates/core/software-org/.claude/paths.json",
+          "templates/core/startup-org/.claude/paths.json"
         ],
-        "dependencies": [],
-        "exemplars": [],
+        "dependencies": [
+          "schemas/paths-v1.schema.json"
+        ],
+        "exemplars": [
+          {
+            "path": "templates/core/software-org/.claude/organizational-level.json",
+            "reason": "Shows existing template JSON file format"
+          }
+        ],
         "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
+        "total_files": 4,
+        "estimated_tokens": 2500
       },
 
       "constraints": [
         {
-          "rule": "Minimal config must include /load-role-context --quiet",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Minimal configuration example"
+          "rule": "Include $schema reference",
+          "source": "JSON Schema best practice",
+          "example": "\"$schema\": \"https://role-context-manager/schemas/paths-v1.json\""
         },
         {
-          "rule": "Standard config must include all three commands",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Standard configuration (recommended)"
-        },
-        {
-          "rule": "Verbose config must include /load-role-context --verbose",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "Verbose configuration"
+          "rule": "Use default values for backward compatibility",
+          "source": "Backward compatibility constraint",
+          "example": "All directory names match v1.6.0 defaults"
         }
       ],
 
       "validation": {
-        "command": "grep -c '/load-role-context' commands/setup-plugin-hooks.md | awk '$1 >= 3 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 3 occurrences of /load-role-context in different configurations",
-        "timeout_seconds": 30,
+        "command": "jq empty templates/core/software-org/.claude/paths.json && jq empty templates/core/startup-org/.claude/paths.json",
+        "expected_outcome": "Both JSON files are valid",
+        "timeout_seconds": 10,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "content_contains",
-          "file": "commands/setup-plugin-hooks.md",
-          "patterns": ["/load-role-context --quiet", "/load-role-context --verbose"]
+          "type": "file_exists",
+          "path": "templates/core/software-org/.claude/paths.json"
+        },
+        {
+          "type": "file_exists",
+          "path": "templates/core/startup-org/.claude/paths.json"
         },
         {
           "type": "command_succeeds",
-          "command": "test -f commands/setup-plugin-hooks.md"
+          "command": "jq empty templates/core/software-org/.claude/paths.json"
         }
       ],
 
       "dependencies": {
-        "depends_on": [],
+        "depends_on": ["T2"],
         "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
+        "type": "implementer",
+        "capabilities_required": ["json", "templates"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": [
+          "templates/core/software-org/.claude/paths.json",
+          "templates/core/startup-org/.claude/paths.json"
+        ],
+        "files_to_restore": []
       }
     },
 
     {
-      "id": "V5",
-      "name": "Verify README.md documentation updates",
-      "type": "verification",
-      "description": "Verify that README.md documents /load-role-context command with usage, options, behavior, and hook integration",
-      "priority": 4,
+      "id": "T10",
+      "name": "Create PATH-CONFIGURATION.md guide",
+      "type": "implementation",
+      "description": "Create comprehensive PATH-CONFIGURATION.md documentation covering configuration hierarchy, environment variables, manifest format, examples, and troubleshooting (~1000 lines).",
+      "priority": 10,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 1000,
+        "concerns": ["documentation"],
+        "within_limits": false,
+        "note": "Exceeds line limit but critical comprehensive guide; documentation is cohesive"
+      },
+
+      "target_files": [
+        {
+          "path": "docs/PATH-CONFIGURATION.md",
+          "action": "CREATE",
+          "purpose": "Comprehensive path configuration guide with examples"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "docs/PATH-CONFIGURATION.md"
+        ],
+        "dependencies": [],
+        "exemplars": [
+          {
+            "path": "CLAUDE.md",
+            "reason": "Shows existing documentation style and structure"
+          }
+        ],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 15000
+      },
+
+      "constraints": [
+        {
+          "rule": "Include all scenarios from blueprint",
+          "source": "End-to-end test scenarios A-F",
+          "example": "Default, env var, manifest, hybrid, hierarchical, migration"
+        },
+        {
+          "rule": "Follow existing documentation structure",
+          "source": "CLAUDE.md",
+          "example": "Use similar heading hierarchy and example format"
+        },
+        {
+          "rule": "Include troubleshooting section",
+          "source": "User support requirement",
+          "example": "Common issues and solutions"
+        }
+      ],
+
+      "validation": {
+        "command": "test -f docs/PATH-CONFIGURATION.md && grep -q 'Configuration Hierarchy' docs/PATH-CONFIGURATION.md",
+        "expected_outcome": "File exists and contains key sections",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "docs/PATH-CONFIGURATION.md"
+        },
+        {
+          "type": "grep_present",
+          "file": "docs/PATH-CONFIGURATION.md",
+          "pattern": "Configuration Hierarchy"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T2"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["documentation", "markdown"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["docs/PATH-CONFIGURATION.md"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T11",
+      "name": "Update existing documentation",
+      "type": "implementation",
+      "description": "Update CLAUDE.md, README.md, CHEATSHEET.md, TEMPLATES.md, and command docs to include path configuration information (~500 lines across files).",
+      "priority": 11,
+
+      "atomicity": {
+        "file_count": 10,
+        "estimated_lines": 500,
+        "concerns": ["documentation-updates"],
+        "within_limits": false,
+        "note": "Exceeds file count but all documentation updates are cohesive"
+      },
+
+      "target_files": [
+        {
+          "path": "CLAUDE.md",
+          "action": "MODIFY",
+          "purpose": "Add path configuration section (~150 lines)"
+        },
+        {
+          "path": "README.md",
+          "action": "MODIFY",
+          "purpose": "Add quick start for custom paths (~50 lines)"
+        },
+        {
+          "path": "CHEATSHEET.md",
+          "action": "MODIFY",
+          "purpose": "Add /configure-paths and /show-paths commands (~80 lines)"
+        },
+        {
+          "path": "TEMPLATES.md",
+          "action": "MODIFY",
+          "purpose": "Document paths.json in templates (~60 lines)"
+        },
+        {
+          "path": "commands/validate-setup.md",
+          "action": "MODIFY",
+          "purpose": "Add path validation section (~100 lines)"
+        },
+        {
+          "path": "commands/init-org-template.md",
+          "action": "MODIFY",
+          "purpose": "Document path customization (~40 lines)"
+        },
+        {
+          "path": "commands/load-role-context.md",
+          "action": "MODIFY",
+          "purpose": "Update example paths (~20 lines)"
+        },
+        {
+          "path": "commands/set-role.md",
+          "action": "MODIFY",
+          "purpose": "Update example paths (~20 lines)"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "CLAUDE.md",
+          "README.md",
+          "CHEATSHEET.md",
+          "TEMPLATES.md",
+          "commands/validate-setup.md",
+          "commands/init-org-template.md",
+          "commands/load-role-context.md",
+          "commands/set-role.md"
+        ],
+        "dependencies": [
+          "docs/PATH-CONFIGURATION.md"
+        ],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 9,
+        "estimated_tokens": 20000
+      },
+
+      "constraints": [
+        {
+          "rule": "Maintain existing documentation style",
+          "source": "Consistency requirement",
+          "example": "Match heading levels and formatting"
+        },
+        {
+          "rule": "Add cross-references to PATH-CONFIGURATION.md",
+          "source": "Documentation best practice",
+          "example": "See [Path Configuration](docs/PATH-CONFIGURATION.md) for details"
+        }
+      ],
+
+      "validation": {
+        "command": "grep -q 'configure-paths' CHEATSHEET.md && grep -q 'paths.json' TEMPLATES.md",
+        "expected_outcome": "New content present in updated files",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "grep_present",
+          "file": "CHEATSHEET.md",
+          "pattern": "configure-paths"
+        },
+        {
+          "type": "grep_present",
+          "file": "TEMPLATES.md",
+          "pattern": "paths.json"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T10"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["documentation", "markdown"]
+      },
+
+      "rollback": {
+        "strategy": "git_restore",
+        "files_to_restore": [
+          "CLAUDE.md",
+          "README.md",
+          "CHEATSHEET.md",
+          "TEMPLATES.md",
+          "commands/validate-setup.md",
+          "commands/init-org-template.md",
+          "commands/load-role-context.md",
+          "commands/set-role.md"
+        ]
+      }
+    },
+
+    {
+      "id": "T12",
+      "name": "Create integration test suite",
+      "type": "test",
+      "description": "Create comprehensive integration test suite for custom paths covering all E2E scenarios from blueprint (50 tests, ~800 lines).",
+      "priority": 12,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 800,
+        "concerns": ["integration-testing"],
+        "within_limits": false,
+        "note": "Exceeds line limit but represents 50 atomic E2E test scenarios"
+      },
+
+      "target_files": [
+        {
+          "path": "tests/test-custom-paths-integration.sh",
+          "action": "CREATE",
+          "purpose": "Integration test suite with 50 E2E scenarios"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "tests/test-custom-paths-integration.sh"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh",
+          "commands/configure-paths.sh",
+          "commands/show-paths.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "tests/test-runner.sh",
+            "reason": "Test framework and patterns"
+          }
+        ],
+        "test_utilities": [
+          "tests/test-runner.sh"
+        ],
+        "total_files": 5,
+        "estimated_tokens": 12000
+      },
+
+      "constraints": [
+        {
+          "rule": "Test all scenarios A-F from blueprint",
+          "source": "End-to-end test scenarios",
+          "example": "Default, env var, manifest, hybrid, hierarchical, migration"
+        },
+        {
+          "rule": "Use isolated temporary directories",
+          "source": "Test isolation requirement",
+          "example": "Each test in unique /tmp/test-* directory"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n tests/test-custom-paths-integration.sh && bash tests/test-custom-paths-integration.sh",
+        "expected_outcome": "All 50 integration tests pass",
+        "timeout_seconds": 300,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "tests/test-custom-paths-integration.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash tests/test-custom-paths-integration.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1", "T3", "T4", "T5", "T6", "T7", "T8"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "integration-testing"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["tests/test-custom-paths-integration.sh"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T13",
+      "name": "Create backward compatibility test suite",
+      "type": "test",
+      "description": "Create test suite specifically verifying 100% backward compatibility with v1.6.0 (20 tests, ~400 lines).",
+      "priority": 13,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 400,
+        "concerns": ["compatibility-testing"],
+        "within_limits": false,
+        "note": "Exceeds 300 line limit but critical for release gate"
+      },
+
+      "target_files": [
+        {
+          "path": "tests/test-backward-compatibility.sh",
+          "action": "CREATE",
+          "purpose": "Backward compatibility verification with 20 test cases"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "tests/test-backward-compatibility.sh"
+        ],
+        "dependencies": [
+          "scripts/path-config.sh"
+        ],
+        "exemplars": [
+          {
+            "path": "tests/test-runner.sh",
+            "reason": "Test framework patterns"
+          }
+        ],
+        "test_utilities": [
+          "tests/test-runner.sh"
+        ],
+        "total_files": 3,
+        "estimated_tokens": 5500
+      },
+
+      "constraints": [
+        {
+          "rule": "Test default behavior without any config",
+          "source": "Backward compatibility constraint",
+          "example": "Verify .claude directory created by default"
+        },
+        {
+          "rule": "Verify all v1.6.0 commands still work",
+          "source": "Zero breaking changes requirement",
+          "example": "Test /set-role, /load-role-context, /init-org-template"
+        },
+        {
+          "rule": "Ensure no forced migration",
+          "source": "Backward compatibility constraint",
+          "example": "Existing setups work without changes"
+        }
+      ],
+
+      "validation": {
+        "command": "bash -n tests/test-backward-compatibility.sh && bash tests/test-backward-compatibility.sh",
+        "expected_outcome": "All 20 backward compatibility tests pass",
+        "timeout_seconds": 180,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "tests/test-backward-compatibility.sh"
+        },
+        {
+          "type": "command_succeeds",
+          "command": "bash tests/test-backward-compatibility.sh"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T1", "T3", "T6", "T7", "T8"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["bash", "compatibility-testing"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["tests/test-backward-compatibility.sh"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T14",
+      "name": "Create MIGRATION guide",
+      "type": "implementation",
+      "description": "Create MIGRATION-TO-PATH-CONFIG.md guide for users migrating from v1.6.0 to custom path configurations (~300 lines).",
+      "priority": 14,
+
+      "atomicity": {
+        "file_count": 1,
+        "estimated_lines": 300,
+        "concerns": ["documentation"],
+        "within_limits": true
+      },
+
+      "target_files": [
+        {
+          "path": "docs/MIGRATION-TO-PATH-CONFIG.md",
+          "action": "CREATE",
+          "purpose": "Migration guide for v1.6.0 users"
+        }
+      ],
+
+      "required_context": {
+        "direct_targets": [
+          "docs/MIGRATION-TO-PATH-CONFIG.md"
+        ],
+        "dependencies": [
+          "docs/PATH-CONFIGURATION.md"
+        ],
+        "exemplars": [],
+        "test_utilities": [],
+        "total_files": 2,
+        "estimated_tokens": 5000
+      },
+
+      "constraints": [
+        {
+          "rule": "Include step-by-step migration instructions",
+          "source": "User support requirement",
+          "example": "Numbered steps with commands to run"
+        },
+        {
+          "rule": "Document rollback procedure",
+          "source": "Safety requirement",
+          "example": "How to revert if migration fails"
+        },
+        {
+          "rule": "Include scenario F from blueprint",
+          "source": "Migration scenario",
+          "example": "Using /configure-paths --migrate"
+        }
+      ],
+
+      "validation": {
+        "command": "test -f docs/MIGRATION-TO-PATH-CONFIG.md && grep -q 'Migration Steps' docs/MIGRATION-TO-PATH-CONFIG.md",
+        "expected_outcome": "File exists with migration instructions",
+        "timeout_seconds": 10,
+        "retry_on_failure": false
+      },
+
+      "success_markers": [
+        {
+          "type": "file_exists",
+          "path": "docs/MIGRATION-TO-PATH-CONFIG.md"
+        },
+        {
+          "type": "grep_present",
+          "file": "docs/MIGRATION-TO-PATH-CONFIG.md",
+          "pattern": "Migration Steps"
+        }
+      ],
+
+      "dependencies": {
+        "depends_on": ["T10"],
+        "blocks": []
+      },
+
+      "agent_assignment": {
+        "type": "implementer",
+        "capabilities_required": ["documentation", "markdown"]
+      },
+
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["docs/MIGRATION-TO-PATH-CONFIG.md"],
+        "files_to_restore": []
+      }
+    },
+
+    {
+      "id": "T15",
+      "name": "Create performance test suite",
+      "type": "test",
+      "description": "Create performance benchmark suite to verify <5ms load time and <10ms command overhead requirements.",
+      "priority": 15,
 
       "atomicity": {
         "file_count": 1,
         "estimated_lines": 200,
-        "concerns": ["documentation-verification"],
+        "concerns": ["performance-testing"],
         "within_limits": true
       },
 
       "target_files": [
         {
-          "path": "README.md",
-          "action": "READ",
-          "purpose": "Verify main documentation completeness"
+          "path": "tests/test-path-config-performance.sh",
+          "action": "CREATE",
+          "purpose": "Performance benchmarks for path-config loading and caching"
         }
       ],
 
       "required_context": {
         "direct_targets": [
-          "README.md"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 8000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must document /load-role-context command",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "### `/load-role-context [--quiet|--verbose]`"
-        },
-        {
-          "rule": "Must list in SessionStart hook section",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "3. **Role context loading**"
-        },
-        {
-          "rule": "Hook examples must include the command",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "\"/load-role-context --quiet\""
-        }
-      ],
-
-      "validation": {
-        "command": "grep -q '/load-role-context' README.md && grep -c '/load-role-context' README.md | awk '$1 >= 5 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 5 references to /load-role-context throughout README",
-        "timeout_seconds": 30,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "content_contains",
-          "file": "README.md",
-          "patterns": ["/load-role-context", "### `/load-role-context", "Role context loading"]
-        },
-        {
-          "type": "command_succeeds",
-          "command": "test -f README.md"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": [],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
-      }
-    },
-
-    {
-      "id": "V6",
-      "name": "Verify CHEATSHEET.md documentation updates",
-      "type": "verification",
-      "description": "Verify that CHEATSHEET.md includes /load-role-context command in commands table and hook examples",
-      "priority": 4,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["documentation-verification"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "CHEATSHEET.md",
-          "action": "READ",
-          "purpose": "Verify cheatsheet completeness"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "CHEATSHEET.md"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must include command in commands table",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "| `/load-role-context` | Load role guide and documents | `--quiet`, `--verbose` |"
-        },
-        {
-          "rule": "Must include in hook examples",
-          "source": "WEAVER_BLUEPRINT.md section 3",
-          "example": "\"/load-role-context --quiet\""
-        }
-      ],
-
-      "validation": {
-        "command": "grep -q 'load-role-context' CHEATSHEET.md && grep -c 'load-role-context' CHEATSHEET.md | awk '$1 >= 2 {exit 0} {exit 1}'",
-        "expected_outcome": "At least 2 references to load-role-context in cheatsheet",
-        "timeout_seconds": 30,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "content_contains",
-          "file": "CHEATSHEET.md",
-          "patterns": ["load-role-context"]
-        },
-        {
-          "type": "command_succeeds",
-          "command": "test -f CHEATSHEET.md"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": [],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["documentation-analysis", "grep"]
-      }
-    },
-
-    {
-      "id": "V7",
-      "name": "Test command execution in all three modes",
-      "type": "functional-test",
-      "description": "Execute /load-role-context in quiet, normal, and verbose modes to verify all output formats work correctly",
-      "priority": 5,
-
-      "atomicity": {
-        "file_count": 2,
-        "estimated_lines": 50,
-        "concerns": ["functional-testing"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test command execution"
-        },
-        {
-          "path": "commands/load-role-context.md",
-          "action": "READ",
-          "purpose": "Reference for expected behavior"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh",
-          "commands/load-role-context.md"
+          "tests/test-path-config-performance.sh"
         ],
         "dependencies": [
-          ".claude/preferences.json"
+          "scripts/path-config.sh"
         ],
-        "exemplars": [],
-        "test_utilities": [],
+        "exemplars": [
+          {
+            "path": "tests/test-runner.sh",
+            "reason": "Test framework patterns"
+          }
+        ],
+        "test_utilities": [
+          "tests/test-runner.sh"
+        ],
         "total_files": 3,
-        "estimated_tokens": 4000
+        "estimated_tokens": 3500
       },
 
       "constraints": [
         {
-          "rule": "Quiet mode must output single line",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "✓ Role context loaded: {role-name} ({count} documents)"
+          "rule": "Verify load time <5ms",
+          "source": "Performance requirements",
+          "example": "Average over 100 iterations"
         },
         {
-          "rule": "Normal mode must include context wrapper",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "=== ROLE CONTEXT LOADED ==="
+          "rule": "Verify cached getter <0.1ms",
+          "source": "Performance requirements",
+          "example": "1000 iterations of get_claude_dir_name"
         },
         {
-          "rule": "Verbose mode must include metadata",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "Scope: project or global"
-        },
-        {
-          "rule": "All modes must exit with code 0",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "exit 0"
+          "rule": "Compare with baseline overhead",
+          "source": "Performance requirements",
+          "example": "Additional overhead <10ms per command"
         }
       ],
 
       "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet > /tmp/quiet_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context > /tmp/normal_test.txt 2>&1 && test $? -eq 0 && bash scripts/role-manager.sh load-role-context --verbose > /tmp/verbose_test.txt 2>&1 && test $? -eq 0 && grep -q '✓ Role context loaded' /tmp/quiet_test.txt && grep -q '=== ROLE CONTEXT LOADED ===' /tmp/normal_test.txt && grep -q 'Scope:' /tmp/verbose_test.txt",
-        "expected_outcome": "All three modes execute successfully with correct output format",
-        "timeout_seconds": 60,
+        "command": "bash -n tests/test-path-config-performance.sh && bash tests/test-path-config-performance.sh",
+        "expected_outcome": "All performance benchmarks pass",
+        "timeout_seconds": 120,
         "retry_on_failure": false
       },
 
       "success_markers": [
         {
-          "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet"
+          "type": "file_exists",
+          "path": "tests/test-path-config-performance.sh"
         },
         {
           "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context"
-        },
-        {
-          "type": "command_succeeds",
-          "command": "bash scripts/role-manager.sh load-role-context --verbose"
-        },
-        {
-          "type": "exit_code_equals",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_code": 0
+          "command": "bash tests/test-path-config-performance.sh"
         }
       ],
 
       "dependencies": {
-        "depends_on": ["V1", "V2", "V3"],
-        "blocks": ["V8", "V9"]
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "output-validation"]
-      }
-    },
-
-    {
-      "id": "V8",
-      "name": "Test graceful degradation (no role set)",
-      "type": "edge-case-test",
-      "description": "Test that command exits silently (code 0) when no role is set in preferences",
-      "priority": 6,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 20,
-        "concerns": ["edge-case-testing"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test edge case behavior"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must exit with code 0 when no role set",
-          "source": "WEAVER_BLUEPRINT.md section 5",
-          "example": "if [[ -z \"$current_role\" ]]; then exit 0; fi"
-        },
-        {
-          "rule": "Must be silent (no error output)",
-          "source": "WEAVER_BLUEPRINT.md section 5",
-          "example": "Silent exit in quiet mode"
-        }
-      ],
-
-      "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && temp_pref=$(mktemp) && cp .claude/preferences.json \"$temp_pref\" && jq 'del(.user_role)' .claude/preferences.json > .claude/preferences.json.tmp && mv .claude/preferences.json.tmp .claude/preferences.json && bash scripts/role-manager.sh load-role-context --quiet > /tmp/no_role_test.txt 2>&1; exit_code=$?; mv \"$temp_pref\" .claude/preferences.json; test $exit_code -eq 0",
-        "expected_outcome": "Command exits with code 0 and produces no error output when no role is set",
-        "timeout_seconds": 60,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "exit_code_equals",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_code": 0
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": ["V7"],
+        "depends_on": ["T1", "T3"],
         "blocks": []
       },
 
       "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "edge-case-testing"]
-      }
-    },
-
-    {
-      "id": "V9",
-      "name": "Test document reference extraction and loading",
-      "type": "functional-test",
-      "description": "Verify that extract_document_references() function is called and documents are loaded from role guide",
-      "priority": 7,
-
-      "atomicity": {
-        "file_count": 2,
-        "estimated_lines": 50,
-        "concerns": ["functional-testing"],
-        "within_limits": true
+        "type": "implementer",
+        "capabilities_required": ["bash", "performance-testing"]
       },
 
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "EXECUTE",
-          "purpose": "Test document loading"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 3000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must call extract_document_references()",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "extract_document_references \"$role_guide\""
-        },
-        {
-          "rule": "Must load documents and count them",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "loaded_count variable"
-        },
-        {
-          "rule": "Must display document count in output",
-          "source": "WEAVER_BLUEPRINT.md section 4",
-          "example": "({count} documents)"
-        }
-      ],
-
-      "validation": {
-        "command": "cd /home/practice-adam-brooks/role-context-manager && bash scripts/role-manager.sh load-role-context --quiet 2>&1 | grep -q 'documents)' && bash scripts/role-manager.sh load-role-context --verbose 2>&1 | grep -q 'Documents loaded:'",
-        "expected_outcome": "Output shows document count, indicating documents were extracted and loaded",
-        "timeout_seconds": 60,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "command_output_contains",
-          "command": "bash scripts/role-manager.sh load-role-context --quiet",
-          "expected_pattern": "documents)"
-        },
-        {
-          "type": "command_output_contains",
-          "command": "bash scripts/role-manager.sh load-role-context --verbose",
-          "expected_pattern": "Documents loaded:"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": ["V7"],
-        "blocks": []
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-execution", "output-validation"]
-      }
-    },
-
-    {
-      "id": "V10",
-      "name": "Verify helper function dependencies exist",
-      "type": "verification",
-      "description": "Verify that all required helper functions exist in role-manager.sh: get_effective_config_dir, get_preference, get_role_guide_path, extract_document_references, resolve_document_path",
-      "priority": 8,
-
-      "atomicity": {
-        "file_count": 1,
-        "estimated_lines": 50,
-        "concerns": ["dependency-verification"],
-        "within_limits": true
-      },
-
-      "target_files": [
-        {
-          "path": "scripts/role-manager.sh",
-          "action": "READ",
-          "purpose": "Verify helper function existence"
-        }
-      ],
-
-      "required_context": {
-        "direct_targets": [
-          "scripts/role-manager.sh"
-        ],
-        "dependencies": [],
-        "exemplars": [],
-        "test_utilities": [],
-        "total_files": 1,
-        "estimated_tokens": 2000
-      },
-
-      "constraints": [
-        {
-          "rule": "Must have get_effective_config_dir function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_effective_config_dir()"
-        },
-        {
-          "rule": "Must have get_preference function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_preference()"
-        },
-        {
-          "rule": "Must have get_role_guide_path function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "get_role_guide_path()"
-        },
-        {
-          "rule": "Must have extract_document_references function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "extract_document_references()"
-        },
-        {
-          "rule": "Must have resolve_document_path function",
-          "source": "WEAVER_BLUEPRINT.md section 2",
-          "example": "resolve_document_path()"
-        }
-      ],
-
-      "validation": {
-        "command": "grep -q '^get_effective_config_dir()' scripts/role-manager.sh && grep -q '^get_preference()' scripts/role-manager.sh && grep -q '^get_role_guide_path()' scripts/role-manager.sh && grep -q '^extract_document_references()' scripts/role-manager.sh && grep -q '^resolve_document_path()' scripts/role-manager.sh",
-        "expected_outcome": "All five required helper functions exist in the script",
-        "timeout_seconds": 30,
-        "retry_on_failure": false
-      },
-
-      "success_markers": [
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_effective_config_dir"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_preference"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "get_role_guide_path"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "extract_document_references"
-        },
-        {
-          "type": "function_exists",
-          "file": "scripts/role-manager.sh",
-          "function_name": "resolve_document_path"
-        }
-      ],
-
-      "dependencies": {
-        "depends_on": [],
-        "blocks": ["V7"]
-      },
-
-      "agent_assignment": {
-        "type": "verifier",
-        "capabilities_required": ["bash-analysis", "grep"]
+      "rollback": {
+        "strategy": "delete_created_files",
+        "files_to_remove": ["tests/test-path-config-performance.sh"],
+        "files_to_restore": []
       }
     }
   ],
 
   "validation_summary": {
     "all_tasks_have_validation": true,
-    "test_first_tasks": [],
+    "test_first_tasks": ["T3"],
     "validation_commands": [
-      "test -f commands/load-role-context.md",
-      "grep -q 'cmd_load_role_context()' scripts/role-manager.sh",
-      "grep -q '/load-role-context --quiet' scripts/post-install.sh",
-      "bash scripts/role-manager.sh load-role-context --quiet",
-      "bash scripts/role-manager.sh load-role-context",
-      "bash scripts/role-manager.sh load-role-context --verbose"
+      "bash -n scripts/path-config.sh && shellcheck scripts/path-config.sh",
+      "jq empty schemas/paths-v1.schema.json",
+      "bash tests/test-path-config.sh",
+      "bash -n commands/configure-paths.sh && shellcheck commands/configure-paths.sh",
+      "bash -n commands/show-paths.sh && shellcheck commands/show-paths.sh",
+      "bash -n scripts/role-manager.sh && shellcheck scripts/role-manager.sh",
+      "bash tests/test-custom-paths-integration.sh",
+      "bash tests/test-backward-compatibility.sh",
+      "bash tests/test-path-config-performance.sh"
     ]
   },
 
@@ -896,36 +1522,55 @@
     "phases": [
       {
         "phase": 1,
-        "name": "Static Documentation Verification",
-        "tasks": ["V1", "V10"],
-        "parallel": true
+        "name": "Foundation",
+        "tasks": ["T1", "T2"],
+        "parallel": false,
+        "description": "Core library and schema"
       },
       {
         "phase": 2,
-        "name": "Implementation Verification",
-        "tasks": ["V2", "V3"],
-        "parallel": true
+        "name": "Core Testing",
+        "tasks": ["T3"],
+        "parallel": false,
+        "description": "Unit tests for path-config.sh"
       },
       {
         "phase": 3,
-        "name": "Documentation Completeness",
-        "tasks": ["V4", "V5", "V6"],
-        "parallel": true
+        "name": "User Commands",
+        "tasks": ["T4", "T5"],
+        "parallel": true,
+        "description": "Configure and show commands"
       },
       {
         "phase": 4,
-        "name": "Functional Testing",
-        "tasks": ["V7"],
-        "parallel": false
+        "name": "Script Refactoring",
+        "tasks": ["T6", "T7", "T8"],
+        "parallel": false,
+        "description": "Update all scripts to use path-config"
       },
       {
         "phase": 5,
-        "name": "Edge Case and Integration Testing",
-        "tasks": ["V8", "V9"],
-        "parallel": true
+        "name": "Templates & Documentation",
+        "tasks": ["T9", "T10", "T11"],
+        "parallel": true,
+        "description": "Templates and comprehensive docs"
+      },
+      {
+        "phase": 6,
+        "name": "Comprehensive Testing",
+        "tasks": ["T12", "T13", "T15"],
+        "parallel": false,
+        "description": "Integration, compatibility, and performance tests"
+      },
+      {
+        "phase": 7,
+        "name": "Migration Support",
+        "tasks": ["T14"],
+        "parallel": false,
+        "description": "Migration guide for users"
       }
     ],
-    "estimated_total_loops": 10,
-    "checkpoint_after": ["V3", "V6", "V7", "V9"]
+    "estimated_total_loops": 15,
+    "checkpoint_after": ["T3", "T8", "T13"]
   }
 }

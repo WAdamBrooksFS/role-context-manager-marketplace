@@ -10,12 +10,18 @@
 
 set -euo pipefail
 
+# Source path configuration library
+source "$(dirname "$0")/path-config.sh"
+
 # Find nearest .claude directory
 find_claude_dir() {
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+
     local dir="$PWD"
     while [[ "$dir" != "/" ]]; do
-        if [[ -d "$dir/.claude" ]]; then
-            echo "$dir/.claude"
+        if [[ -d "$dir/$claude_dir_name" ]]; then
+            echo "$dir/$claude_dir_name"
             return 0
         fi
         dir="$(dirname "$dir")"
@@ -68,11 +74,14 @@ detect_by_heuristics() {
     fi
 
     # Check for implementation roles in role-guides
-    if [[ -d "$claude_dir/role-guides" ]]; then
-        if ls "$claude_dir/role-guides"/*engineer*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/*developer*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/sdet*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/qa-engineer*.md &>/dev/null; then
+    local role_guides_dir
+    role_guides_dir="$(get_role_guides_dir)" || role_guides_dir="role-guides"
+
+    if [[ -d "$claude_dir/$role_guides_dir" ]]; then
+        if ls "$claude_dir/$role_guides_dir"/*engineer*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/*developer*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/sdet*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/qa-engineer*.md &>/dev/null; then
             ((score_project+=2))
         fi
     fi
@@ -95,9 +104,9 @@ detect_by_heuristics() {
     fi
 
     # Check for coordination roles
-    if [[ -d "$claude_dir/role-guides" ]]; then
-        if ls "$claude_dir/role-guides"/*qa-manager*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/*designer*.md &>/dev/null; then
+    if [[ -d "$claude_dir/$role_guides_dir" ]]; then
+        if ls "$claude_dir/$role_guides_dir"/*qa-manager*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/*designer*.md &>/dev/null; then
             ((score_product+=2))
         fi
     fi
@@ -119,10 +128,10 @@ detect_by_heuristics() {
     fi
 
     # Check for system roles
-    if [[ -d "$claude_dir/role-guides" ]]; then
-        if ls "$claude_dir/role-guides"/*manager*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/*platform*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/technical-*.md &>/dev/null; then
+    if [[ -d "$claude_dir/$role_guides_dir" ]]; then
+        if ls "$claude_dir/$role_guides_dir"/*manager*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/*platform*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/technical-*.md &>/dev/null; then
             ((score_system+=2))
         fi
     fi
@@ -142,11 +151,11 @@ detect_by_heuristics() {
     fi
 
     # Check for executive roles
-    if [[ -d "$claude_dir/role-guides" ]]; then
-        if ls "$claude_dir/role-guides"/cto*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/cpo*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/ciso*.md &>/dev/null || \
-           ls "$claude_dir/role-guides"/*vp-*.md &>/dev/null; then
+    if [[ -d "$claude_dir/$role_guides_dir" ]]; then
+        if ls "$claude_dir/$role_guides_dir"/cto*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/cpo*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/ciso*.md &>/dev/null || \
+           ls "$claude_dir/$role_guides_dir"/*vp-*.md &>/dev/null; then
             ((score_company+=3))
         fi
     fi
@@ -239,8 +248,11 @@ EOF
 # Main function
 main() {
     local claude_dir
+    local claude_dir_name
+    claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+
     claude_dir="$(find_claude_dir)" || {
-        echo "Error: No .claude directory found in current path" >&2
+        echo "Error: No $claude_dir_name directory found in current path" >&2
         exit 2
     }
 

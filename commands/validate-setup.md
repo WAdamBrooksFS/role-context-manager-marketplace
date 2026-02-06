@@ -309,13 +309,14 @@ When this command is executed, invoke the **framework-validator agent** to perfo
 ## Validation Checks
 
 ### Critical Checks (Must Pass)
-- `.claude/` directory exists with proper permissions
-- `.claude/role-guides/` directory exists
+- `.claude/` directory exists with proper permissions (or custom configured directory)
+- `.claude/role-guides/` directory exists (or custom configured path)
 - At least one role guide file present
 - `preferences.json` exists and is valid JSON
 - `role-references.json` exists and is valid JSON
 - `organizational-level.json` exists and is valid JSON
 - JSON structure matches expected schema
+- `paths.json` (if present) is valid and follows schema
 
 ### Important Checks (Should Pass)
 - Multiple role guides exist (3+ for most templates)
@@ -333,6 +334,51 @@ When this command is executed, invoke the **framework-validator agent** to perfo
 - File permissions are appropriate (readable, writable where needed)
 - Role guides contain required sections
 - Configuration values are sensible
+
+### Path Configuration Validation
+
+When `paths.json` is present, validation includes:
+
+**Path Configuration Checks**:
+- `paths.json` file is valid JSON
+- Directory names follow security constraints (alphanumeric, dots, hyphens, underscores only)
+- No path traversal attempts (`..` sequences)
+- No absolute paths in configuration
+- Configured directories actually exist
+- Schema version is valid (if specified)
+
+**Configuration Consistency**:
+- Actual directory structure matches `paths.json` configuration
+- Environment variables (if set) are consistent with manifest
+- Global and local path configurations don't conflict
+
+**Validation Example**:
+```bash
+# Validate with custom paths
+/validate-setup
+
+# Agent checks:
+# ✓ Path configuration valid (.myorg/paths.json)
+# ✓ Claude directory exists: .myorg/
+# ✓ Role guides directory exists: .myorg/guides/
+# ✓ Directory names follow security constraints
+# ✓ No path traversal attempts detected
+```
+
+**Common Path Issues Detected**:
+- Invalid directory names (spaces, special characters)
+- Mismatched configuration (paths.json says `.myorg` but directory is `.claude`)
+- Path traversal attempts in configuration
+- Missing directories specified in paths.json
+- Conflicting environment variables
+
+**Auto-Fix Capabilities**:
+- Create missing directories specified in paths.json
+- Update paths.json to match actual directory structure
+- Remove invalid path configuration entries
+- Standardize directory name format
+
+See [Path Configuration](../docs/PATH-CONFIGURATION.md) for complete path customization details.
 
 ## Issue Severity Levels
 

@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Source path configuration library
+source "$(dirname "$0")/path-config.sh"
+
 # Get plugin directory
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATES_DIR="$PLUGIN_DIR/templates"
@@ -106,19 +109,24 @@ validate_template() {
     ((errors++))
   fi
 
-  if [ ! -d "$template_path/.claude" ]; then
-    echo "Error: Missing .claude directory" >&2
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  local role_guides_dir
+  role_guides_dir="$(get_role_guides_dir)" || role_guides_dir="role-guides"
+
+  if [ ! -d "$template_path/$claude_dir_name" ]; then
+    echo "Error: Missing $claude_dir_name directory" >&2
     ((errors++))
   fi
 
-  if [ ! -d "$template_path/.claude/role-guides" ]; then
-    echo "Error: Missing .claude/role-guides directory" >&2
+  if [ ! -d "$template_path/$claude_dir_name/$role_guides_dir" ]; then
+    echo "Error: Missing $claude_dir_name/$role_guides_dir directory" >&2
     ((errors++))
   fi
 
   # Check if role-guides has at least one file
   local guide_count
-  guide_count=$(find "$template_path/.claude/role-guides" -name "*.md" 2>/dev/null | wc -l)
+  guide_count=$(find "$template_path/$claude_dir_name/$role_guides_dir" -name "*.md" 2>/dev/null | wc -l)
   if [ "$guide_count" -eq 0 ]; then
     echo "Warning: No role guide files found in template" >&2
   fi
@@ -169,7 +177,9 @@ apply_template() {
 
 # Check template version and compare with applied version
 check_template_version() {
-  local prefs_file="${1:-.claude/preferences.json}"
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  local prefs_file="${1:-$claude_dir_name/preferences.json}"
 
   if [ ! -f "$prefs_file" ]; then
     echo "No preferences file found" >&2
@@ -208,7 +218,9 @@ check_template_version() {
 
 # Check if auto-update is enabled
 should_auto_update() {
-  local prefs_file="${1:-.claude/preferences.json}"
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  local prefs_file="${1:-$claude_dir_name/preferences.json}"
 
   if [ ! -f "$prefs_file" ]; then
     # Default to true if preferences file doesn't exist
@@ -274,11 +286,13 @@ record_applied_template() {
 
 # Create backup of .claude directory before template operations
 create_template_backup() {
-  local claude_dir="${1:-.claude}"
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  local claude_dir="${1:-$claude_dir_name}"
   local reason="${2:-manual-backup}"
 
   if [ ! -d "$claude_dir" ]; then
-    echo "Error: .claude directory not found" >&2
+    echo "Error: $claude_dir_name directory not found" >&2
     return 1
   fi
 
@@ -320,7 +334,9 @@ EOF
 
 # List available backups
 list_backups() {
-  local claude_dir="${1:-.claude}"
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  local claude_dir="${1:-$claude_dir_name}"
   local backups_dir="$claude_dir/.backups"
 
   if [ ! -d "$backups_dir" ]; then
@@ -487,8 +503,11 @@ apply_template_with_mode() {
   fi
 
   # Check if .claude already exists
-  if [ -d "$target_dir/.claude" ]; then
-    echo "Warning: .claude directory already exists" >&2
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+
+  if [ -d "$target_dir/$claude_dir_name" ]; then
+    echo "Warning: $claude_dir_name directory already exists" >&2
     echo "Use template-sync agent for updating existing setups" >&2
     return 1
   fi
@@ -547,7 +566,9 @@ apply_template_with_mode() {
   done <<< "$includes"
 
   # Record applied template with mode
-  record_applied_template "$template_id" "$mode" "$target_dir/.claude/preferences.json"
+  local claude_dir_name
+  claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
+  record_applied_template "$template_id" "$mode" "$target_dir/$claude_dir_name/preferences.json"
 
   echo -e "${GREEN}✓${NC} Template applied successfully (mode: $mode)"
   return 0
@@ -664,8 +685,10 @@ main() {
       ;;
     backup)
       local reason="${2:-manual-backup}"
+      local claude_dir_name
+      claude_dir_name="$(get_claude_dir_name)" || claude_dir_name=".claude"
       local backup_path
-      backup_path=$(create_template_backup ".claude" "$reason")
+      backup_path=$(create_template_backup "$claude_dir_name" "$reason")
       echo -e "${GREEN}✓${NC} Backup created: $backup_path"
       ;;
     list-backups)

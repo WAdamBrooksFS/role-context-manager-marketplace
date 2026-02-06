@@ -1,0 +1,7 @@
+{
+  "$schema": "https://role-context-manager/schemas/paths-v1.json",
+  "version": "1.0.0",
+  "description": "Default path configuration for software-org template",
+  "claude_dir_name": ".claude",
+  "role_guides_dir": "role-guides"
+}

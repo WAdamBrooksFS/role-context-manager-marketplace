@@ -35,9 +35,11 @@ Set your current role to determine which documents load for context in Claude Co
 ## What This Command Does
 
 1. Validates the specified role exists at your current organizational level
-2. Updates `.claude/preferences.json` with your role
+2. Updates `.claude/preferences.json` with your role (or custom configured directory)
 3. Initializes role-specific document references from the role guide if not already set
 4. Displays which documents will load on your next Claude Code session
+
+Note: If custom paths are configured (via `paths.json` or environment variables), the command uses the configured directory names. For example, if configured to use `.myorg`, it updates `.myorg/preferences.json`.
 
 ## Usage Examples
 
@@ -219,6 +221,26 @@ This role will be used across all projects unless overridden.
 
 Start a new session to load this context.
 ```
+
+**Example with custom paths:**
+```bash
+# Configure custom directory name first
+/configure-paths --claude-dir=.myorg
+
+# Set role (uses custom path)
+/set-role software-engineer
+
+# Output:
+✓ Role set to: software-engineer
+✓ Updated: .myorg/preferences.json (project scope)
+
+Documents that will load on next session:
+  ✓ /engineering-standards.md
+  ✓ /quality-standards.md
+  ...
+```
+
+See [Path Configuration](../docs/PATH-CONFIGURATION.md) for details on customizing directory names.
 
 ## Related Commands
 
