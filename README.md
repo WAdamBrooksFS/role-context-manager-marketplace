@@ -6,6 +6,46 @@ A Claude Code marketplace plugin that manages role-based document context loadin
 
 This plugin helps teams organize and load documentation based on roles within an organizational hierarchy (company → system → product → project). It integrates with role-guide systems and allows both team-wide defaults and user-specific customizations.
 
+## What's New in v1.7.0
+
+**Major Release:** Integration of Path Configuration and Hierarchical Organizations
+
+This release merges two powerful feature branches into a unified system:
+
+1. **Hierarchical Organizations** (from workflow-enhancements branch)
+   - Multi-level organizational structures (company → system → product → project)
+   - Automatic parent detection and validation
+   - Role guide inheritance across organizational levels
+   - Level-based template filtering to avoid duplication
+
+2. **Path Configuration System** (from master branch)
+   - Customizable directory names (`.claude` → `.myorg`)
+   - Global and local path configuration
+   - Environment variable support
+   - Safe migration tools for existing setups
+
+**Integration Highlights:**
+
+- **Seamless Combination:** Both features work together out of the box
+- **Hierarchy with Custom Paths:** Detect parent organizations regardless of directory name
+- **Migration Support:** Migrate hierarchical structures to custom directory names
+- **Unified Validation:** Single validation command checks both systems
+- **Performance:** Combined overhead <200ms (tested and optimized)
+- **Backward Compatible:** Existing setups work without changes
+
+**New Documentation:**
+
+- [Hierarchical Organizations Guide](docs/HIERARCHICAL-ORGANIZATIONS.md) - Complete hierarchy documentation
+- [Combined Features Guide](docs/COMBINED-FEATURES.md) - Using both features together
+- [CLAUDE.md](CLAUDE.md) - Integrated architecture documentation
+- Updated command documentation with hierarchy examples
+
+**New Commands:**
+
+- `/add-role-guides` - Add role guides with inheritance-aware filtering
+
+**See [CHANGELOG.md](CHANGELOG.md) for complete v1.7.0 release notes.**
+
 ## Features
 
 ### Core Features (v1.0.0)
@@ -15,7 +55,31 @@ This plugin helps teams organize and load documentation based on roles within an
 - **Team defaults + user overrides**: Share team configurations while allowing personal customizations
 - **Smart level detection**: Automatically detects organizational level or prompts when ambiguous
 - **Integration with role guides**: Reads document references from existing role-guide files
-- **Custom path configuration**: Customize directory names (`.claude`, `role-guides`) to match organizational standards
+
+### Hierarchical Organizations (v1.7.0 - New!)
+- **Multi-level organizational structures**: Company → System → Product → Project with inheritance
+- **Automatic parent detection**: Scans directory tree to find parent organizations
+- **Role guide inheritance**: Child levels inherit guides from parent levels (no duplication)
+- **Parent-child validation**: Ensures valid organizational relationships
+- **Level-based filtering**: Templates apply only appropriate guides for each level
+- **Hierarchy visualization**: See organizational structure and relationships
+- **Cross-level role access**: All roles available across hierarchy via inheritance
+
+### Path Configuration System (v1.7.0 - New!)
+- **Customizable directory names**: Rename `.claude` to `.myorg`, `role-guides` to `guides`, etc.
+- **Multiple configuration sources**: Environment variables, local manifests, global manifests
+- **Priority-based resolution**: Clear hierarchy from environment to global to defaults
+- **Safe migration tools**: Migrate existing directories with validation
+- **Security constraints**: Prevents path traversal and invalid characters
+- **Performance optimized**: Configuration caching for minimal overhead
+- **Integration ready**: Works seamlessly with all plugin features
+
+### Combined System (v1.7.0 Integration)
+- **Hierarchy + Custom Paths**: Detect parent organizations with any directory names
+- **Unified Validation**: Single command validates both path config and hierarchy
+- **Coordinated Migration**: Migrate hierarchical structures to new directory names
+- **Mixed Configurations**: Parent and child can use different directory names
+- **Comprehensive Documentation**: Guides for all combinations and edge cases
 
 ### New in v1.3.0: Complete Template Bundles & Multi-Scope Configuration
 - **Multi-Scope Configuration**: Global and project-level configuration support

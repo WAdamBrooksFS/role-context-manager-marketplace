@@ -8,6 +8,10 @@ set -euo pipefail
 # Source path configuration library
 source "$(dirname "$0")/path-config.sh"
 
+# Source hierarchy detection library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/hierarchy-detector.sh"
+
 # Get plugin directory
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMPLATES_DIR="$PLUGIN_DIR/templates"

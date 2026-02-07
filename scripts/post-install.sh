@@ -8,8 +8,8 @@
 # so that validation and template sync checks run on every session start.
 #
 # Supports multi-scope configuration:
-#   SCOPE=global - Configure in ~/.claude/settings.json
-#   SCOPE=project - Configure in ./.claude/settings.json
+#   SCOPE=global - Configure in ~/$CLAUDE_DIR_NAME/settings.json
+#   SCOPE=project - Configure in ./$CLAUDE_DIR_NAME/settings.json
 #   SCOPE=auto (default) - Configure in project if exists, else global
 #
 # Exit codes:
@@ -83,7 +83,7 @@ if [[ -f "$MARKER_FILE" ]]; then
     exit 0
 fi
 
-# Ensure .claude directory exists
+# Ensure $CLAUDE_DIR_NAME directory exists
 if [[ ! -d "$CLAUDE_DIR" ]]; then
     mkdir -p "$CLAUDE_DIR"
     echo "Created $SCOPE_DISPLAY directory"
@@ -123,7 +123,7 @@ if command -v jq &>/dev/null; then
     echo "Settings file: $SETTINGS_FILE"
     echo ""
     echo "The following commands will run on session start:"
-    echo "  1. /validate-setup --quiet - Validates .claude directory setup"
+    echo "  1. /validate-setup --quiet - Validates $CLAUDE_DIR_NAME directory setup"
     echo "  2. /sync-template --check-only - Checks for template updates"
     echo "  3. /load-role-context --quiet - Loads your role guide and documents"
     echo ""

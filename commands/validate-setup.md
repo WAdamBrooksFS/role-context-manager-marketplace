@@ -380,6 +380,295 @@ When `paths.json` is present, validation includes:
 
 See [Path Configuration](../docs/PATH-CONFIGURATION.md) for complete path customization details.
 
+## Hierarchical Organizations Validation (v1.7.0)
+
+When using hierarchical organizations (company → system → product → project), validation includes additional checks for hierarchy integrity and role guide inheritance.
+
+### Hierarchy-Specific Validation Checks
+
+**Parent Detection:**
+- Parent `.claude` (or custom) directory exists at recorded path
+- Parent `organizational-level.json` is valid
+- Parent path is accessible and readable
+
+**Relationship Validation:**
+- Current level is valid (company/system/product/project)
+- Parent level is valid
+- Parent-child relationship is valid:
+  - company can parent: system, product, project
+  - system can parent: product, project
+  - product can parent: project
+  - project cannot have children (leaf node)
+
+**Inheritance Validation:**
+- No duplicate role guides across hierarchy levels
+- Child doesn't contain parent-level guides
+- Parent guides are accessible from child
+- Role guide mapping is correct for each level
+
+**Hierarchy Path Integrity:**
+- Hierarchy path array is valid
+- All ancestors exist and are accessible
+- No circular references
+- No orphaned organizational levels
+
+### Validation Output for Hierarchies
+
+**Example: Valid Hierarchy**
+```bash
+/validate-setup
+
+# Hierarchy Validation
+# ✓ Organizational level: project
+# ✓ Parent detected: /company/product-a/.claude (product level)
+# ✓ Hierarchy relationship valid (project child of product)
+# ✓ Hierarchy path: company → product → project
+# ✓ Role guide inheritance working correctly
+# ✓ No duplicate guides (6 inherited, 3 local)
+# ✓ All parent paths accessible
+```
+
+**Example: Hierarchy Issues Detected**
+```bash
+/validate-setup
+
+# Hierarchy Validation Issues
+#
+# ✗ Critical: Invalid parent-child relationship
+#
+#   What's wrong:
+#     Current level: system
+#     Parent level: product
+#     Relationship: Invalid (system cannot be child of product)
+#
+#   Why it matters:
+#     Breaks organizational hierarchy logic
+#     Role guide inheritance may not work correctly
+#     Template filtering will fail
+#
+#   How to fix:
+#     Option 1: Change current level to 'project' (/set-org-level project)
+#     Option 2: Fix parent level in parent directory
+#     Option 3: Remove parent reference if hierarchy not needed
+#
+#   Root cause:
+#     Organizational levels set incorrectly during initialization
+#
+# ✗ Warning: Duplicate role guides detected
+#
+#   What's wrong:
+#     Found product-manager-guide.md in both:
+#       - Current: ./.claude/role-guides/product-manager-guide.md
+#       - Parent: /parent/.claude/role-guides/product-manager-guide.md
+#
+#   Why it matters:
+#     Wastes disk space
+#     May cause confusion about which guide is authoritative
+#     Goes against inheritance design
+#
+#   How to fix:
+#     Delete local copy (child should inherit from parent):
+#       rm ./.claude/role-guides/product-manager-guide.md
+#
+#   Root cause:
+#     Guide was manually copied or template filtering didn't work
+```
+
+### Hierarchy Validation with Custom Paths
+
+Validation works with custom directory names:
+
+```bash
+export RCM_CLAUDE_DIR_NAME=".myorg"
+export RCM_ROLE_GUIDES_DIR="guides"
+
+/validate-setup
+
+# Path Configuration & Hierarchy Validation
+# ✓ Path configuration valid (.myorg/paths.json)
+# ✓ Claude directory exists: .myorg/
+# ✓ Role guides directory exists: .myorg/guides/
+# ✓ Organizational level: project
+# ✓ Parent detected: /parent/.myorg (product level)
+# ✓ Parent uses same path configuration
+# ✓ Hierarchy relationship valid (project child of product)
+# ✓ Role guide inheritance working (custom paths)
+```
+
+### Auto-Fix for Hierarchy Issues
+
+When using `/validate-setup --fix`, the agent can automatically repair some hierarchy issues:
+
+**Fixable Issues:**
+- Remove duplicate role guides (keep parent copy)
+- Update invalid parent paths
+- Fix broken hierarchy path arrays
+- Repair malformed organizational-level.json
+
+**Requires Manual Fix:**
+- Invalid parent-child relationships (need level changes)
+- Missing parent directories (need parent initialization)
+- Circular references (need hierarchy redesign)
+
+**Example Auto-Fix:**
+```bash
+/validate-setup --fix
+
+# Hierarchy issues detected. Fixable issues:
+#
+# Fix 1: Remove duplicate role guide
+#   File: ./.claude/role-guides/product-manager-guide.md
+#   Reason: Inherited from parent /parent/.claude
+#   Action: Delete local copy
+#
+# Fix 2: Update parent path
+#   Current: parent_claude_dir: "/old-path/.claude"
+#   New: parent_claude_dir: "/current-path/.claude"
+#   Reason: Parent moved but reference not updated
+#
+# Apply fixes? (yes/no)
+# > yes
+#
+# ✓ Removed duplicate guide: product-manager-guide.md
+# ✓ Updated parent path in organizational-level.json
+#
+# Re-validating...
+# ✓ All hierarchy checks passed!
+```
+
+### Common Hierarchy Issues
+
+**Issue: Parent not found**
+```
+✗ Parent directory not found
+  Expected: /parent/.claude
+  Check: Does parent directory still exist?
+         Was it moved or renamed?
+```
+
+**Fix:**
+- If parent moved: Update `parent_claude_dir` in `organizational-level.json`
+- If parent deleted: Remove parent reference or re-initialize parent
+- If wrong path: Correct path in `organizational-level.json`
+
+**Issue: Invalid relationship**
+```
+✗ Invalid parent-child relationship
+  Current: system
+  Parent: product
+  Valid relationships: product → project, not product → system
+```
+
+**Fix:**
+- Change current level: `/set-org-level project`
+- Or fix parent level in parent directory
+- Or remove parent reference if hierarchy not needed
+
+**Issue: Duplicate guides**
+```
+✗ Duplicate role guide
+  Local: ./.claude/role-guides/qa-manager-guide.md
+  Parent: /parent/.claude/role-guides/qa-manager-guide.md
+```
+
+**Fix:**
+- Delete local copy (inherited from parent)
+- Or if customized: Rename to avoid conflict
+
+**Issue: Missing parent guides**
+```
+⚠ Cannot access parent role guides
+  Parent: /parent/.claude/role-guides/
+  Permission: Access denied
+```
+
+**Fix:**
+- Check directory permissions
+- Verify user has read access to parent
+- Check if parent directory structure is intact
+
+### Validation Modes with Hierarchies
+
+**Quick Mode** (`--quick`):
+- Checks parent path exists
+- Validates parent-child relationship
+- Skips detailed inheritance analysis
+
+**Full Mode** (default):
+- Complete hierarchy validation
+- Inheritance analysis
+- Duplicate detection
+- Permission checks
+
+**Silent Mode** (`--silent`):
+- No output if hierarchy valid
+- Shows only critical hierarchy errors
+
+**Fix Mode** (`--fix`):
+- Offers automated repairs for hierarchy issues
+- Creates backups before modifying
+- Re-validates after fixes
+
+### Validation for Different Hierarchy Scenarios
+
+**Single Organization (No Hierarchy):**
+```bash
+/validate-setup
+
+# ✓ Organizational level: project
+# ℹ No parent organization detected (standalone setup)
+# ✓ All checks passed
+```
+
+**Two-Level Hierarchy (Parent-Child):**
+```bash
+/validate-setup
+
+# ✓ Organizational level: project
+# ✓ Parent: /parent/.claude (product level)
+# ✓ Hierarchy relationship valid
+# ✓ Role guide inheritance: 3 inherited, 5 local
+```
+
+**Multi-Level Hierarchy (Grandparent-Parent-Child):**
+```bash
+/validate-setup
+
+# ✓ Organizational level: project
+# ✓ Parent: /product/.claude (product level)
+# ✓ Grandparent: /company/.claude (company level)
+# ✓ Hierarchy path: company → product → project
+# ✓ Role guide inheritance: 8 inherited (5 from product, 3 from company), 5 local
+```
+
+### Best Practices for Hierarchical Validation
+
+1. **Validate after changes**: Run `/validate-setup` after modifying organizational levels
+2. **Fix issues promptly**: Address hierarchy errors before they propagate
+3. **Use --fix cautiously**: Review proposed fixes before accepting
+4. **Check parent first**: If child has issues, validate parent first
+5. **Document hierarchy**: Keep organizational structure documented
+6. **Regular checks**: Include validation in CI/CD for shared setups
+
+### Troubleshooting Hierarchy Validation
+
+**Validation hangs or is slow:**
+- Large directory tree: Use `--quick` mode
+- Network filesystem: Parent on slow mount
+- Many ancestors: Limit hierarchy depth
+
+**False positives (incorrect errors):**
+- Stale cache: Restart Claude Code
+- Outdated config: Re-run `/set-org-level`
+- Path issues: Verify with `/show-paths`
+
+**Validation passes but hierarchy not working:**
+- Check if commands use hierarchy: `/add-role-guides` should show filtering
+- Verify guides: Check parent guides are accessible
+- Test inheritance: Try accessing parent guide from child
+
+See [Hierarchical Organizations Guide](../docs/HIERARCHICAL-ORGANIZATIONS.md) and [Combined Features Guide](../docs/COMBINED-FEATURES.md) for complete documentation.
+
 ## Issue Severity Levels
 
 **Critical** (✗ Red):

@@ -1,7 +1,7 @@
 # Role Context Manager - Cheatsheet
 
-**Plugin Version:** 1.3.0
-**Description:** Role-based document context manager for Claude Code
+**Plugin Version:** 1.7.0
+**Description:** Role-based document context manager for Claude Code with hierarchical organizations
 
 ---
 
@@ -115,6 +115,48 @@ See [Path Configuration](docs/PATH-CONFIGURATION.md) for complete details.
 
 ---
 
+#### `/add-role-guides [guide1] [guide2] [CUSTOM:name]`
+
+**Purpose:** Add role guides to existing organizational setup after initialization
+
+**Arguments:**
+- `guide-name` - One or more role guide filenames from templates
+- `CUSTOM:name` - Create custom role guide with specified name
+
+**What it does:**
+- Validates .claude directory exists
+- Determines current organizational level
+- Filters guides based on parent-level inheritance (hierarchical organizations)
+- Copies selected guides from template to .claude/role-guides/
+- Generates placeholder markdown for custom guides
+- Reports what was added, skipped, or filtered
+
+**Examples:**
+```bash
+# Add single guide
+/add-role-guides software-engineer-guide.md
+
+# Add multiple guides
+/add-role-guides qa-engineer-guide.md devops-engineer-guide.md
+
+# Create custom guide
+/add-role-guides CUSTOM:platform-sre
+
+# Mix template and custom
+/add-role-guides software-engineer-guide.md CUSTOM:devops-lead
+```
+
+**When to use:**
+- Team is growing, need additional role guides
+- Need specialized role not in template
+- Adding guides incrementally after initial setup
+- Working in hierarchical organization (respects parent-child relationships)
+
+**Hierarchical Filtering:**
+If working in child organization (e.g., project under product), automatically filters out guides that should be inherited from parent level, preventing duplication.
+
+---
+
 #### `/show-paths [OPTIONS]`
 
 **Purpose:** Display current path configuration
@@ -212,6 +254,118 @@ See [Path Configuration](docs/PATH-CONFIGURATION.md) for complete details.
 - Common workflows and example scenarios
 - Document references
 - Integration with other roles
+
+---
+
+## Organizational Commands (Hierarchical Organizations)
+
+**When to use:** Working in multi-level organizational structures
+
+### Understanding Organizational Hierarchy
+
+Role Context Manager supports four organizational levels in parent-child relationships:
+
+**Company** (root level)
+  └─ **System** (coordination level)
+      └─ **Product** (feature groups)
+          └─ **Project** (implementation)
+
+**Key Features:**
+- Automatic parent detection (scans upward for parent .claude directories)
+- Role guide inheritance (child inherits from parent, avoids duplication)
+- Level-based filtering (templates apply appropriate guides for each level)
+- Parent-child validation (ensures valid relationships)
+
+### Hierarchy-Aware Commands
+
+#### Automatic Parent Detection
+
+When running `/set-org-level` or `/init-org-template` in a directory with parent `.claude`:
+- Detects parent organizational level automatically
+- Shows parent context in prompts
+- Filters available level options based on parent
+- Validates selected level against parent
+- Records parent path in `organizational-level.json`
+
+#### Role Guide Inheritance
+
+When adding guides with `/add-role-guides` in child organization:
+- Automatically skips parent-level roles (inherited from parent)
+- Shows which guides were filtered: "Skipped: qa-manager-guide.md (inherited from parent product level)"
+- Only copies guides appropriate for child level
+- Prevents duplication across hierarchy
+
+#### Template Application with Hierarchy
+
+When running `/init-org-template` in child organization:
+- Template only applies guides for current level
+- Parent-level guides are inherited, not copied
+- Shows filtering feedback during application
+- Respects organizational boundaries
+
+### Hierarchical Organization Examples
+
+**Example 1: Company → Product → Project Structure**
+
+```bash
+# Company level (root)
+cd /company-root
+/init-org-template --project
+/set-org-level company
+/set-role cto
+
+# Product level (child of company)
+cd /company-root/product-a
+/init-org-template
+# Automatically detects parent (company level)
+# Prompts: "Recommended level: product (child of company)"
+/set-org-level product
+/set-role product-manager
+# qa-manager-guide inherited from parent
+
+# Project level (child of product)
+cd /company-root/product-a/project-x
+/init-org-template
+# Detects parent chain: company → product
+# Prompts: "Recommended level: project (child of product)"
+/set-org-level project
+/set-role software-engineer
+# Inherits product-manager, qa-manager from ancestors
+```
+
+**Example 2: Adding Guides with Inheritance**
+
+```bash
+# At product level
+cd /company-root/product-a
+/add-role-guides product-manager-guide.md qa-manager-guide.md
+# ✓ Added product-manager-guide.md
+# ✓ Added qa-manager-guide.md
+
+# At project level (child of product)
+cd /company-root/product-a/project-x
+/add-role-guides qa-manager-guide.md software-engineer-guide.md
+# Skipped: qa-manager-guide.md (inherited from parent product level)
+# ✓ Added: software-engineer-guide.md
+```
+
+### Organizational Level Detection
+
+**Automatic Detection Strategies:**
+
+1. **Explicit Marker**: Reads `.claude/organizational-level.json`
+2. **Parent Context**: Scans for parent `.claude` directories
+3. **Heuristic Detection**:
+   - Company: Repository root, executive role guides, strategy docs
+   - System: System role guides, coordination docs
+   - Product: Product-level guides, PRDs, roadmaps
+   - Project: Implementation guides, package.json, src/ directory
+4. **User Prompt**: If ambiguous, prompts with parent-aware recommendations
+
+### See Also
+
+- [Hierarchical Organizations Guide](docs/HIERARCHICAL-ORGANIZATIONS.md) - Complete hierarchy documentation
+- [Combined Features Guide](docs/COMBINED-FEATURES.md) - Using hierarchy with custom paths
 
 ---
 
@@ -342,6 +496,130 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 
 ---
 
+## Combined Workflows (v1.7.0)
+
+**When to use:** Using custom paths AND hierarchical organizations together
+
+### Scenario 1: Custom Paths in Hierarchical Structure
+
+Use custom directory names across organizational hierarchy:
+
+```bash
+# Configure custom paths globally
+/configure-paths --global --claude-dir=.myorg --role-guides-dir=guides
+
+# Company level with custom paths
+cd /company-root
+/init-org-template --project
+# Creates: .myorg/ and .myorg/guides/
+/set-org-level company
+/set-role cto
+
+# Product level (child) with inherited custom paths
+cd /company-root/product-a
+/init-org-template
+# Creates: .myorg/ (inherits path config from parent or global)
+# Detects parent: /company-root/.myorg
+/set-org-level product
+/set-role product-manager
+```
+
+**Result:** Hierarchical structure with consistent custom directory naming.
+
+### Scenario 2: Mixed Path Configuration
+
+Parent uses default paths, child uses custom paths:
+
+```bash
+# Parent with defaults
+cd /parent-org
+/init-org-template
+# Creates: .claude/ and .claude/role-guides/
+/set-org-level company
+
+# Child with custom paths
+cd /parent-org/child-project
+/configure-paths --local --claude-dir=.custom
+/init-org-template
+# Creates: .custom/ and .custom/role-guides/
+# Still detects parent at ../claude
+/set-org-level project
+```
+
+**Result:** Hierarchy detection works across different directory names.
+
+### Scenario 3: Migrating Hierarchical Setup
+
+Migrate existing hierarchy to custom paths:
+
+```bash
+# Step 1: Configure new paths globally
+/configure-paths --global --claude-dir=.myorg
+
+# Step 2: Migrate each level (top to bottom)
+cd /company-root
+/configure-paths --migrate .claude .myorg
+# Migrates: .claude → .myorg (preserves organizational-level.json)
+
+cd /company-root/product-a
+/configure-paths --migrate .claude .myorg
+# Migrates: .claude → .myorg (updates parent paths automatically)
+
+cd /company-root/product-a/project-x
+/configure-paths --migrate .claude .myorg
+# Migrates: .claude → .myorg (maintains hierarchy references)
+```
+
+**Result:** Entire hierarchy uses new directory names with preserved relationships.
+
+### Scenario 4: Adding Guides with Custom Paths and Hierarchy
+
+```bash
+# At product level with custom paths
+cd /company/.myorg-product
+export RCM_CLAUDE_DIR_NAME=".myorg"
+export RCM_ROLE_GUIDES_DIR="guides"
+
+/add-role-guides product-manager-guide.md
+# Adds to: .myorg/guides/product-manager-guide.md
+
+# At child project level
+cd /company/.myorg-product/project-x
+/add-role-guides software-engineer-guide.md qa-manager-guide.md
+# Adds to: .myorg/guides/software-engineer-guide.md
+# Skips: qa-manager-guide.md (inherited from parent .myorg-product)
+```
+
+**Result:** Combined path customization and hierarchical filtering.
+
+### Key Benefits of Combined Features
+
+1. **Organizational Flexibility**: Custom directory names + multi-level structure
+2. **Consistent Naming**: Same custom paths across entire hierarchy
+3. **Inheritance Works**: Parent detection works with any directory names
+4. **Migration Safe**: Can migrate hierarchies without breaking relationships
+5. **Security Maintained**: Path validation applies to hierarchical detection
+
+### Validation with Combined Features
+
+```bash
+/validate-setup
+
+# Checks both features:
+# ✓ Path configuration valid (.myorg/paths.json)
+# ✓ Claude directory exists: .myorg/
+# ✓ Role guides directory exists: .myorg/guides/
+# ✓ Organizational level valid: project
+# ✓ Parent organizational level detected: product
+# ✓ Parent path: /parent/.myorg
+# ✓ Hierarchy relationship valid (project child of product)
+# ✓ Role guide inheritance working correctly
+```
+
+See [Combined Features Guide](docs/COMBINED-FEATURES.md) for advanced workflows, edge cases, and best practices.
+
+---
+
 ## Understanding Scope
 
 ### How Scope Affects Your Reference Files
@@ -400,6 +678,7 @@ Invokes the Role Guide Generator agent to create a comprehensive role guide.
 | `/sync-template` | Synchronize template updates | `--check-only`, `--quiet`, `--preview`, `--force` |
 | `/configure-paths` | Configure custom directory names | `--claude-dir`, `--role-guides-dir`, `--migrate`, `--global`, `--local`, `--dry-run` |
 | `/show-paths` | Display path configuration | `--verbose`, `--json` |
+| `/add-role-guides` | Add role guides after initialization | `guide1`, `guide2`, `CUSTOM:name` |
 
 ### All Agents
 

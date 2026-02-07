@@ -10,8 +10,14 @@
 
 set -euo pipefail
 
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Source path configuration library
-source "$(dirname "$0")/path-config.sh"
+source "$SCRIPT_DIR/path-config.sh"
+
+# Source hierarchy detection functions (after path-config per C8)
+source "$SCRIPT_DIR/hierarchy-detector.sh" 2>/dev/null || true
 
 # Find nearest .claude directory
 find_claude_dir() {
@@ -197,34 +203,129 @@ prompt_user_for_level() {
     echo "" >&2
     echo "Current directory: $PWD" >&2
     echo "" >&2
+
+    # Detect parent context if hierarchy-detector is available
+    local parent_dir=""
+    local parent_level=""
+    local valid_options=()
+    local recommended=""
+
+    if command -v get_nearest_parent &> /dev/null; then
+        parent_dir="$(get_nearest_parent "$PWD" 2>/dev/null)" || parent_dir=""
+
+        if [[ -n "$parent_dir" ]] && command -v get_level_value &> /dev/null; then
+            parent_level="$(get_level_value "$parent_dir" 2>/dev/null)" || parent_level=""
+
+            if [[ -n "$parent_level" ]]; then
+                echo "Detected parent organizational level: $parent_level" >&2
+                echo "" >&2
+
+                # Determine valid child levels based on parent
+                case "$parent_level" in
+                    company)
+                        valid_options=("system" "product" "project")
+                        recommended="system"
+                        ;;
+                    system)
+                        valid_options=("product" "project")
+                        recommended="product"
+                        ;;
+                    product)
+                        valid_options=("project")
+                        recommended="project"
+                        ;;
+                    project)
+                        echo "Warning: Parent is project level, which cannot have children" >&2
+                        echo "Creating sibling project instead" >&2
+                        valid_options=("project")
+                        recommended="project"
+                        ;;
+                esac
+            fi
+        fi
+    fi
+
+    # If no parent detected or hierarchy-detector not available, allow all options
+    if [[ ${#valid_options[@]} -eq 0 ]]; then
+        valid_options=("company" "system" "product" "project")
+        recommended="project"
+    fi
+
+    # Display options
     echo "Please specify the organizational level:" >&2
-    echo "  1. Company (root level, executive roles)" >&2
-    echo "  2. System (major initiative/platform)" >&2
-    echo "  3. Product (group of related projects)" >&2
-    echo "  4. Project (individual codebase)" >&2
+    local option_num=1
+    local choice_map=()
+
+    for level in "company" "system" "product" "project"; do
+        # Check if this level is valid
+        local is_valid=false
+        for valid in "${valid_options[@]}"; do
+            if [[ "$valid" == "$level" ]]; then
+                is_valid=true
+                break
+            fi
+        done
+
+        if [[ "$is_valid" == "true" ]]; then
+            local label=""
+            case "$level" in
+                company) label="Company (root level, executive roles)" ;;
+                system) label="System (major initiative/platform)" ;;
+                product) label="Product (group of related projects)" ;;
+                project) label="Project (individual codebase)" ;;
+            esac
+
+            if [[ "$level" == "$recommended" ]]; then
+                echo "  $option_num. $label [RECOMMENDED]" >&2
+            else
+                echo "  $option_num. $label" >&2
+            fi
+
+            choice_map+=("$level")
+            ((option_num++))
+        fi
+    done
+
     echo "" >&2
-    echo -n "Enter choice [1-4]: " >&2
+    echo -n "Enter choice [1-${#choice_map[@]}]: " >&2
 
     read -r choice
 
-    case "$choice" in
-        1) echo "company" ;;
-        2) echo "system" ;;
-        3) echo "product" ;;
-        4) echo "project" ;;
-        *)
-            echo "Invalid choice. Defaulting to project." >&2
-            echo "project"
-            ;;
-    esac
+    # Validate choice
+    if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#choice_map[@]} )); then
+        local selected_level="${choice_map[$((choice-1))]}"
+
+        # Validate against parent if hierarchy-detector available
+        if [[ -n "$parent_level" ]] && command -v is_valid_child_level &> /dev/null; then
+            if is_valid_child_level "$parent_level" "$selected_level" 2>/dev/null; then
+                echo "$selected_level"
+            else
+                echo "Warning: Invalid hierarchy relationship, but proceeding anyway" >&2
+                echo "$selected_level"
+            fi
+        else
+            echo "$selected_level"
+        fi
+    else
+        echo "Invalid choice. Using recommended: $recommended" >&2
+        echo "$recommended"
+    fi
 }
 
 # Save level to organizational-level.json
 save_level() {
     local claude_dir="$1"
     local level="$2"
-    local level_file="$claude_dir/organizational-level.json"
     local level_name="$(basename "$(dirname "$claude_dir")")"
+
+    # Use hierarchy-aware save if available
+    if command -v save_level_with_hierarchy &> /dev/null; then
+        save_level_with_hierarchy "$claude_dir" "$level" "$level_name"
+        return $?
+    fi
+
+    # Fallback to basic save if hierarchy-detector not available
+    local level_file="$claude_dir/organizational-level.json"
 
     if command -v jq &> /dev/null; then
         jq -n \
