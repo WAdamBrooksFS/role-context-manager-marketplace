@@ -6,6 +6,8 @@ A Claude Code marketplace plugin that manages role-based document context loadin
 
 This plugin helps teams organize and load documentation based on roles within an organizational hierarchy (company → system → product → project). It integrates with role-guide systems and allows both team-wide defaults and user-specific customizations.
 
+**📊 New to the plugin? Start with the [Visual Guide](PLUGIN-VISUAL-GUIDE.md)** - Comprehensive Mermaid diagrams explaining the plugin for non-technical users, all users, and engineers.
+
 ## What's New in v1.7.0
 
 **Major Release:** Integration of Path Configuration and Hierarchical Organizations
@@ -927,6 +929,24 @@ sudo apt-get install jq
 sudo yum install jq
 ```
 
+## Documentation
+
+### Quick Start
+- **[Visual Guide](PLUGIN-VISUAL-GUIDE.md)** - Comprehensive diagrams for all audiences (start here!)
+- **[Cheat Sheet](CHEATSHEET.md)** - Quick command reference
+
+### Feature Guides
+- **[Path Configuration](docs/PATH-CONFIGURATION.md)** - Customize directory names
+- **[Hierarchical Organizations](docs/HIERARCHICAL-ORGANIZATIONS.md)** - Multi-level structures
+- **[Combined Features](docs/COMBINED-FEATURES.md)** - Using both features together
+- **[Scopes](SCOPES.md)** - Global and project configuration
+- **[Templates](TEMPLATES.md)** - Template system details
+
+### Advanced
+- **[CLAUDE.md](CLAUDE.md)** - Complete architecture documentation (for AI/engineers)
+- **[Commands](commands/)** - Individual command documentation
+- **[CHANGELOG.md](CHANGELOG.md)** - Complete version history
+
 ## Contributing
 
 Contributions are welcome! Please:
@@ -949,152 +969,8 @@ MIT License - See LICENSE file for details
 
 ## Changelog
 
-### v1.3.0 (2026-01-08) - Multi-Scope Configuration & Global Installation Support
+For complete version history and detailed release notes, see [CHANGELOG.md](CHANGELOG.md).
 
-**Major Features**:
-- **Multi-Scope Configuration**: Plugin now works at global and project levels
-  - **Global scope** (~/.claude/): Personal defaults across all projects
-  - **Project scope** (./.claude/): Project-specific settings that override global
-  - **Auto mode**: Intelligently chooses project or global based on context
-  - **Configuration hierarchy**: Project > Global > Plugin Defaults
-  - Works when installed globally (`local-user`) or per-project
+**Latest Release**: v1.7.0 (2026-02-06) - Integration of Path Configuration and Hierarchical Organizations
 
-**All Commands Updated with Scope Support**:
-- `/set-role [role] --global|--project|--scope <auto|global|project>`
-- `/init-org-template --global|--project`
-- `/update-role-docs [+/-]files --global|--project`
-- `/init-role-docs --reset --global|--project`
-- `/set-org-level [level] --global|--project`
-- `/validate-setup --global|--project` - Validates both scopes
-- `/sync-template --global|--project` - Syncs both scopes
-- `/show-role-context` - Shows configuration hierarchy
-- `/setup-plugin-hooks --global|--project` - Configures hooks at either scope
-
-**Core Script Enhancements**:
-- `role-manager.sh`: Added multi-scope functions
-  - `find_config_dir()` - Scope-aware config directory resolution
-  - `get_effective_config_dir()` - Hierarchy with fallback
-  - `ensure_global_config()` - Auto-creates global config on first use
-  - `get_preference()` - Reads with global fallback
-  - `set_preference()` - Writes to appropriate scope
-- `post-install.sh`: Updated for multi-scope hook installation
-- Template and validation scripts: Support both scopes
-
-**Hook Improvements**:
-- SessionStart hooks work at both global and project levels
-- Global hooks run for all projects
-- Project hooks override global when both exist
-- Independent marker files per scope
-
-**New Documentation**:
-- `SCOPES.md` - Comprehensive scope configuration guide
-- `docs/MULTI-SCOPE-HOOKS.md` - Multi-scope hook behavior
-- `docs/TEST-PLAN.md` - Comprehensive test plan for multi-scope
-
-**Enhanced Commands**:
-- `/show-role-context` - Now displays configuration hierarchy
-  - Shows global config (if exists)
-  - Shows project config (if exists)
-  - Shows effective configuration (what's actually used)
-  - Indicates source of each setting
-
-**Backward Compatibility**:
-- Existing project-only setups continue to work unchanged
-- No migration required for v1.2.0 users
-- Auto mode provides seamless experience
-
-**Use Cases Enabled**:
-- Personal defaults with project overrides
-- Works outside projects (not just in .claude directories)
-- Team standards with personal customizations
-- Flexible development environments
-
-**Migration Path**:
-- v1.2.0 and earlier: Project-only configuration continues to work
-- Add global config optionally: `/init-org-template --global`
-- Existing projects unaffected, global config adds convenience
-
-### v1.2.0 (2026-01-05) - SessionStart Hook & Auto-Validation
-**New Features**:
-- **SessionStart Hook**: Automatic validation and update checks on session start
-- **First-Run Initialization**: Guided setup on first use with welcome flow
-- **Auto-Configuration**: Hook setup automatic on first command use
-
-**New Command**:
-- `/setup-plugin-hooks` - Configure SessionStart hook (manual fallback)
-
-**Enhanced Commands with New Flags**:
-- `/validate-setup --silent` - No output unless issues found
-- `/validate-setup --quiet` - One-line summary only
-- `/validate-setup --summary` - Brief checklist of results
-- `/sync-template --check-only` - Check for updates without applying
-- `/sync-template --quiet` - Minimal output with check-only
-- `/show-role-context --summary` - One-line role context summary
-
-**Agent Enhancements**:
-- **framework-validator**: Added hook modes (silent, quiet, summary) and first-run detection
-- **template-sync**: Added check-only mode for non-intrusive update checks
-
-**Hook Integration**:
-- Pre-flight checks in all major commands to configure hook on first use
-- Non-intrusive session start validation
-- Automatic template update detection (respects auto_update_templates preference)
-- First-run welcome and initialization offer
-
-**Scripts**:
-- New `post-install.sh` for automatic hook configuration
-
-**Documentation**:
-- New SessionStart Hook section in README
-- SessionStart Hook Integration section in TEMPLATES.md
-- Updated command documentation with flag usage
-- Hook customization examples and troubleshooting
-
-**User Experience**:
-- Zero manual configuration required
-- Seamless onboarding for new users
-- Quiet operation for established users
-- Setup always validated on session start
-
-### v1.1.0 (2026-01-05) - Templates & Intelligent Agents
-**New Commands**:
-- `/init-org-template` - Initialize organizational framework from templates
-- `/generate-document` - Generate documents from templates with role context
-- `/create-role-guide` - Create custom role guides following patterns
-- `/validate-setup` - Validate and troubleshoot .claude directory
-- `/sync-template` - Sync template updates while preserving customizations
-
-**New Intelligent Agents**:
-- **template-setup-assistant** - Analyzes context, recommends templates, guides setup
-- **document-generator** - Creates role-aware documents from templates
-- **role-guide-generator** - Generates custom role guides learning from existing patterns
-- **framework-validator** - Deep validation with explanations and automated fixes
-- **template-sync** - Intelligent merge of template updates with customization preservation
-
-**Bundled Templates**:
-- **software-org** v1.0.0 - Full organizational framework (6 role guides, 3 document guides, 14 org docs)
-- **startup-org** v1.0.0 - Lean startup framework (flat structure, fundraising support)
-
-**Enhanced Features**:
-- Auto-trigger template setup when .claude is incomplete
-- Proactive document generation suggestions
-- Template version tracking and auto-update support (opt-in/out)
-- Backup and rollback capabilities for template operations
-- Enhanced commands with template integration
-
-**Configuration**:
-- New `auto_update_templates` preference (default: true)
-- New `applied_template` tracking (id, version, applied_date)
-- Template registry system for version management
-
-**Scripts**:
-- New `template-manager.sh` for template operations
-- Enhanced `role-manager.sh` with setup checking functions
-
-### v1.0.0 (Initial Release)
-- Role-based context management
-- Organizational level detection
-- Document customization with +/- syntax
-- Team defaults + user overrides
-- Integration with role guides
-- Five commands: set-role, show-role-context, update-role-docs, init-role-docs, set-org-level
+See [What's New in v1.7.0](#whats-new-in-v170) above for highlights.
