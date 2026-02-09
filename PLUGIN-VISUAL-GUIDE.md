@@ -18,6 +18,7 @@ This visual guide explains the role-context-manager plugin through diagrams orga
 The role-context-manager plugin helps teams organize and share documentation based on their organizational structure and individual roles. Think of it as an intelligent filing system that knows what information each person needs.
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     A[Problem: Documentation Chaos] --> B{Challenges}
     B --> C[Too many docs]
@@ -37,9 +38,9 @@ graph TD
     K --> M[Managers see strategy docs]
     K --> N[Designers see design docs]
 
-    style A fill:#ffcccc
-    style F fill:#ccffcc
-    style K fill:#cce5ff
+    style A fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style F fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style K fill:#8cf,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Key Benefits:**
@@ -54,6 +55,7 @@ graph TD
 The plugin provides two powerful systems that work together:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph LR
     A[Role Context Manager v1.7.0] --> B[Path Configuration System]
     A --> C[Hierarchical Organizations]
@@ -77,10 +79,10 @@ graph LR
     J --> L[Better Organization]
     K --> L
 
-    style A fill:#e6ccff
-    style B fill:#cce5ff
-    style C fill:#cce5ff
-    style L fill:#ccffcc
+    style A fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style B fill:#8cf,stroke:#333,stroke-width:2px,color:#000
+    style C fill:#8cf,stroke:#333,stroke-width:2px,color:#000
+    style L fill:#8d8,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Path Configuration System**: Customize where configuration is stored (e.g., use `.myorg` instead of `.claude`)
@@ -143,6 +145,7 @@ sequenceDiagram
 For teams with multiple organizational levels (company → product → project):
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     Start[Start: Multi-level Organization] --> CheckRoot{Is this the<br/>root level?}
 
@@ -175,12 +178,12 @@ graph TD
     MoreLevels -->|Yes| CheckRoot
     MoreLevels -->|No| Complete[✓ Hierarchy complete]
 
-    style Start fill:#e6ccff
-    style CompanyDone fill:#ccffcc
-    style ChildDone fill:#ccffcc
-    style Complete fill:#ccffcc
-    style Error fill:#ffcccc
-    style InheritNote fill:#fff4cc
+    style Start fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style CompanyDone fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style ChildDone fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style Complete fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style Error fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style InheritNote fill:#fc8,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Key Points:**
@@ -202,6 +205,7 @@ graph TD
 Choose when and how to customize directory names:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     Start[Do you need custom paths?] --> Evaluate{Why customize?}
 
@@ -243,9 +247,9 @@ graph TD
     TopDown --> Done[✓ Configuration complete]
     AnyOrder --> Done
 
-    style Start fill:#e6ccff
-    style Done fill:#ccffcc
-    style UseDefault fill:#cce5ff
+    style Start fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style Done fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style UseDefault fill:#8cf,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Configuration Priority** (highest to lowest):
@@ -329,6 +333,7 @@ sequenceDiagram
 Commands are organized by purpose with typical usage sequences:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph Setup["🔧 Setup Commands"]
         InitOrg["/init-org-template<br/>Initialize from template"]
@@ -380,11 +385,11 @@ graph TB
     SetRole -.->|"--global<br/>--project"| SetRole
     UpdateDocs -.->|"--global<br/>--project"| UpdateDocs
 
-    style Setup fill:#e6f3ff
-    style Role fill:#fff4e6
-    style Org fill:#f0e6ff
-    style Validate fill:#e6ffe6
-    style Generate fill:#ffe6f0
+    style Setup fill:#9cf,stroke:#333,stroke-width:2px,color:#000
+    style Role fill:#fc8,stroke:#333,stroke-width:2px,color:#000
+    style Org fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style Validate fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style Generate fill:#f9c,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Command Sequences:**
@@ -420,6 +425,7 @@ graph TB
 The plugin is organized in layers with clear dependencies:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph Application["Application Layer"]
         CMD[Commands<br/>/set-role, /load-role-context, etc.]
@@ -474,13 +480,13 @@ graph TB
     FS --> DOCS
 
     %% Styling
-    style Application fill:#e6f3ff
-    style Orchestration fill:#fff4e6
-    style Core fill:#f0e6ff
-    style Storage fill:#e6ffe6
+    style Application fill:#9cf,stroke:#333,stroke-width:2px,color:#000
+    style Orchestration fill:#fc8,stroke:#333,stroke-width:2px,color:#000
+    style Core fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style Storage fill:#8d8,stroke:#333,stroke-width:2px,color:#000
 
-    style PC fill:#cce5ff
-    style HD fill:#cce5ff
+    style PC fill:#8cf,stroke:#333,stroke-width:2px,color:#000
+    style HD fill:#8cf,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Key Design Principles:**
@@ -520,6 +526,7 @@ graph TB
 How the plugin determines which directory names to use:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TD
     Start[Plugin needs directory name] --> LoadConfig{Configuration<br/>cached?}
 
@@ -574,13 +581,13 @@ graph TD
     Validate -->|Pass| Done[✓ Directory name ready]
     Validate -->|Fail| SecurityError[❌ Error: Security violation]
 
-    style Start fill:#e6ccff
-    style Done fill:#ccffcc
-    style Error1 fill:#ffcccc
-    style Error2 fill:#ffcccc
-    style Error3 fill:#ffcccc
-    style SecurityError fill:#ffcccc
-    style Cache fill:#fff4cc
+    style Start fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style Done fill:#8d8,stroke:#333,stroke-width:2px,color:#000
+    style Error1 fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style Error2 fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style Error3 fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style SecurityError fill:#d88,stroke:#333,stroke-width:2px,color:#000
+    style Cache fill:#fc8,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Configuration Priority** (highest to lowest):
@@ -610,6 +617,7 @@ graph TD
 How the two core systems work together:
 
 ```mermaid
+%%{init: {'theme':'neutral'}}%%
 graph TB
     subgraph Integration["v1.7.0 Integration Architecture"]
         direction TB
@@ -676,11 +684,11 @@ graph TB
         E7 --> E8
     end
 
-    style PathConfig fill:#cce5ff
-    style Hierarchy fill:#cce5ff
-    style Integration fill:#f0e6ff
-    style Usage fill:#fff4e6
-    style Examples fill:#e6ffe6
+    style PathConfig fill:#8cf,stroke:#333,stroke-width:2px,color:#000
+    style Hierarchy fill:#8cf,stroke:#333,stroke-width:2px,color:#000
+    style Integration fill:#c9f,stroke:#333,stroke-width:2px,color:#000
+    style Usage fill:#fc8,stroke:#333,stroke-width:2px,color:#000
+    style Examples fill:#8d8,stroke:#333,stroke-width:2px,color:#000
 ```
 
 **Integration Points:**
