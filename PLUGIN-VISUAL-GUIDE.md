@@ -335,13 +335,13 @@ Commands are organized by purpose with typical usage sequences:
 ```mermaid
 %%{init: {'theme':'neutral'}}%%
 graph TB
-    subgraph Setup["🔧 Setup Commands"]
+    subgraph Setup["Setup Commands"]
         InitOrg["/init-org-template<br/>Initialize from template"]
         ConfigPaths["/configure-paths<br/>Customize directory names"]
         SetLevel["/set-org-level<br/>Set organizational level"]
     end
 
-    subgraph Role["👤 Role Management"]
+    subgraph Role["Role Management"]
         SetRole["/set-role<br/>Set your role"]
         ShowRole["/show-role-context<br/>View role & documents"]
         LoadRole["/load-role-context<br/>Load into session"]
@@ -349,18 +349,18 @@ graph TB
         InitDocs["/init-role-docs<br/>Reset to defaults"]
     end
 
-    subgraph Org["🏢 Organization Commands"]
+    subgraph Org["Organization Commands"]
         AddGuides["/add-role-guides<br/>Add guides with inheritance"]
         SetOrgLevel["/set-org-level<br/>Set/view level"]
         ShowPaths["/show-paths<br/>View path configuration"]
     end
 
-    subgraph Validate["✅ Validation"]
+    subgraph Validate["Validation"]
         ValidateSetup["/validate-setup<br/>Check configuration"]
         SyncTemplate["/sync-template<br/>Update from template"]
     end
 
-    subgraph Generate["📝 Generation"]
+    subgraph Generate["Generation"]
         GenDoc["/generate-document<br/>Create from template"]
         CreateGuide["/create-role-guide<br/>Create custom guide"]
     end
@@ -619,50 +619,26 @@ How the two core systems work together:
 ```mermaid
 %%{init: {'theme':'neutral'}}%%
 graph TB
-    subgraph Integration["v1.7.0 Integration Architecture"]
-        direction TB
+    subgraph PathConfig["Path Configuration System"]
+        PC1[path-config.sh<br/>Foundation Layer]
+        PC2[Configuration Sources:<br/>1. Environment Variables<br/>2. Local Manifest<br/>3. Global Manifest<br/>4. Defaults]
+        PC3[Public API:<br/>get_claude_dir_name<br/>get_role_guides_dir<br/>get_full_claude_path<br/>get_full_role_guides_path]
+        PC4[Security Validation]
+        PC5[Configuration Caching]
+    end
 
-        subgraph PathConfig["Path Configuration System (v1.6.0)"]
-            PC1[path-config.sh<br/>Foundation Layer]
-            PC2[Configuration Sources:<br/>1. Environment Variables<br/>2. Local Manifest<br/>3. Global Manifest<br/>4. Defaults]
-            PC3[Public API:<br/>get_claude_dir_name<br/>get_role_guides_dir<br/>get_full_claude_path<br/>get_full_role_guides_path]
-            PC4[Security Validation]
-            PC5[Configuration Caching]
-        end
-
-        subgraph Hierarchy["Hierarchical Organizations (v1.5.0 → v1.7.0)"]
-            HD1[hierarchy-detector.sh<br/>Enhanced with Path Config]
-            HD2[Parent Detection:<br/>Uses get_claude_dir_name]
-            HD3[Hierarchy Building:<br/>Works with any directory name]
-            HD4[Inheritance Logic:<br/>Uses get_role_guides_dir]
-            HD5[Level Validation]
-        end
-
-        PC1 --> PC2
-        PC2 --> PC3
-        PC3 --> PC4
-        PC4 --> PC5
-
-        HD1 --> HD2
-        HD2 --> HD3
-        HD3 --> HD4
-        HD4 --> HD5
-
-        PC3 -.->|"Dependency:<br/>HD sources PC"| HD2
-        PC3 -.->|"30+ function calls"| HD4
+    subgraph Hierarchy["Hierarchical Organizations"]
+        HD1[hierarchy-detector.sh<br/>Enhanced with Path Config]
+        HD2[Parent Detection:<br/>Uses get_claude_dir_name]
+        HD3[Hierarchy Building:<br/>Works with any directory name]
+        HD4[Inheritance Logic:<br/>Uses get_role_guides_dir]
+        HD5[Level Validation]
     end
 
     subgraph Usage["Usage in Orchestration Layer"]
         RM2[role-manager.sh]
         LD2[level-detector.sh]
         TM2[template-manager.sh]
-
-        RM2 -.-> PC3
-        RM2 -.-> HD1
-        LD2 -.-> PC3
-        LD2 -.-> HD1
-        TM2 -.-> PC3
-        TM2 -.-> HD1
     end
 
     subgraph Examples["Example: Template Application"]
@@ -674,19 +650,38 @@ graph TB
         E6["6. Detects parent with<br/>ANY directory name"]
         E7["7. Filters guides based on<br/>inheritance + custom paths"]
         E8["8. Creates child directory with<br/>configured name"]
-
-        E1 --> E2
-        E2 --> E3
-        E3 --> E4
-        E4 --> E5
-        E5 --> E6
-        E6 --> E7
-        E7 --> E8
     end
+
+    PC1 --> PC2
+    PC2 --> PC3
+    PC3 --> PC4
+    PC4 --> PC5
+
+    HD1 --> HD2
+    HD2 --> HD3
+    HD3 --> HD4
+    HD4 --> HD5
+
+    PC3 -.->|"Dependency: HD sources PC"| HD2
+    PC3 -.->|"30+ function calls"| HD4
+
+    RM2 -.-> PC3
+    RM2 -.-> HD1
+    LD2 -.-> PC3
+    LD2 -.-> HD1
+    TM2 -.-> PC3
+    TM2 -.-> HD1
+
+    E1 --> E2
+    E2 --> E3
+    E3 --> E4
+    E4 --> E5
+    E5 --> E6
+    E6 --> E7
+    E7 --> E8
 
     style PathConfig fill:#8cf,stroke:#333,stroke-width:2px,color:#000
     style Hierarchy fill:#8cf,stroke:#333,stroke-width:2px,color:#000
-    style Integration fill:#c9f,stroke:#333,stroke-width:2px,color:#000
     style Usage fill:#fc8,stroke:#333,stroke-width:2px,color:#000
     style Examples fill:#8d8,stroke:#333,stroke-width:2px,color:#000
 ```
